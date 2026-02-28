@@ -67,7 +67,8 @@ def class_assign(class_name):
     if request.method == 'POST':
         # Trigger assignment
         result = solver.assign_seats(class_name)
-        io.save_assignment(class_name, result)
+        if "error" not in result:
+            io.save_assignment(class_name, result)
         return jsonify(result)
         
     assignment = io.load_assignment(class_name)

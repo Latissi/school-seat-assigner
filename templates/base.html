@@ -12,10 +12,32 @@
         body { padding: 2em; max-width: 1200px; margin: 0 auto; }
         .nav { padding: 1em 0; margin-bottom: 2em; border-bottom: 1px solid #eee; }
         .nav a { margin-right: 1em; }
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; }
+        .toast { padding: 10px 20px; border-radius: 4px; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1); opacity: 0; transition: opacity 0.3s; }
+        .toast.show { opacity: 1; }
+        .toast.success { background-color: #1e90ff; } /* Matches Picnic default */
+        .toast.error { background-color: #d9534f; }   /* Matches Picnic error */
     </style>
     {% block head %}{% endblock %}
 </head>
 <body>
+    <div id="toast-container"></div>
+    <script>
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
     <header>
         <div class="nav">
             <a href="/"><i class="fa-solid fa-house"></i> Home</a>

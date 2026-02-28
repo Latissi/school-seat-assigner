@@ -35,11 +35,15 @@ def save_pupils(class_name, doc):
 
 def load_teacher_constraints(class_name):
     class_dir = get_class_dir(class_name)
-    return _load_json(os.path.join(class_dir, 'teacher.json'), default={"front_row": [], "back_row": [], "keep_apart": []})
+    return _load_json(os.path.join(class_dir, 'teacher.json'), default={"keep_apart": [], "compatible_pairs": []})
 
 def save_teacher_constraints(class_name, doc):
     class_dir = get_class_dir(class_name)
-    _save_json(os.path.join(class_dir, 'teacher.json'), doc)
+    canonical = {
+        "keep_apart": doc.get("keep_apart", []) if isinstance(doc, dict) else [],
+        "compatible_pairs": doc.get("compatible_pairs", []) if isinstance(doc, dict) else []
+    }
+    _save_json(os.path.join(class_dir, 'teacher.json'), canonical)
 
 def load_assignment(class_name):
     class_dir = get_class_dir(class_name)

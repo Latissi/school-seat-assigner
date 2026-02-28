@@ -5,147 +5,160 @@
 {% block content %}
 <h2><i class="fa-solid fa-scale-balanced"></i> Teacher Rules: {{ class_name }}</h2>
 
-<datalist id="pupils-list">
+{% macro pupil_options() %}
+    <option value="" disabled selected>Select Pupil...</option>
     {% for p in pupils.pupils %}
-    <option value="{{ (p.first_name|default('') ~ ' ' ~ p.last_name|default(p.name|default('')))|trim }}"></option>
+    <option value="{{ p.id }}">{{ (p.first_name|default('') ~ ' ' ~ p.last_name|default(p.name|default('')))|trim }}</option>
     {% endfor %}
-</datalist>
+{% endmacro %}
 
 <div class="flex two">
     <div class="half">
         <div class="card" style="padding: 1em;">
-            <h3><i class="fa-solid fa-arrow-up"></i> Front Row Pupils</h3>
+            <h3><i class="fa-solid fa-user-friends"></i> Compatible Learning Pairs</h3>
+            <p style="font-size: 0.9em; color: #666;">These pupils will be seated close to each other.</p>
             <table class="primary">
-                <tbody id="front-table"></tbody>
+                <thead><tr><th>A</th><th>B</th><th>Action</th></tr></thead>
+                <tbody id="pairs-table"></tbody>
             </table>
             <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <input type="text" id="add-front" list="pupils-list" placeholder="Pupil Name..." autocomplete="off">
-                <button onclick="addFront()"><i class="fa-solid fa-plus"></i></button>
-            </div>
-        </div>
-        
-        <div class="card" style="padding: 1em; margin-top: 1em;">
-            <h3><i class="fa-solid fa-arrow-down"></i> Back Row Pupils</h3>
-            <table class="primary">
-                <tbody id="back-table"></tbody>
-            </table>
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <input type="text" id="add-back" list="pupils-list" placeholder="Pupil Name..." autocomplete="off">
-                <button onclick="addBack()"><i class="fa-solid fa-plus"></i></button>
+                <select id="add-pair-a">
+                    {{ pupil_options() }}
+                </select>
+                <select id="add-pair-b">
+                    {{ pupil_options() }}
+                </select>
+                <button onclick="addPair()"><i class="fa-solid fa-plus"></i></button>
             </div>
         </div>
     </div>
     
     <div class="half">
         <div class="card" style="padding: 1em;">
-            <h3><i class="fa-solid fa-people-arrows"></i> Keep Apart (Always)</h3>
+            <h3><i class="fa-solid fa-people-arrows"></i> Keep Apart</h3>
+            <p style="font-size: 0.9em; color: #666;">These pupils will be seated as far apart as possible.</p>
             <table class="primary">
                 <thead><tr><th>A</th><th>B</th><th>Action</th></tr></thead>
                 <tbody id="apart-table"></tbody>
             </table>
             <div style="display: flex; gap: 10px; margin-top: 10px;">
-                <input type="text" id="add-apart-a" list="pupils-list" placeholder="Pupil A..." autocomplete="off">
-                <input type="text" id="add-apart-b" list="pupils-list" placeholder="Pupil B..." autocomplete="off">
+                <select id="add-apart-a">
+                    {{ pupil_options() }}
+                </select>
+                <select id="add-apart-b">
+                    {{ pupil_options() }}
+                </select>
                 <button onclick="addApart()"><i class="fa-solid fa-plus"></i></button>
             </div>
         </div>
-
-        
     </div>
 </div>
 
 <script>
     const className = "{{ class_name }}";
     let data = {
-        front_row: {{ constraints.front_row | tojson | safe }} || [],
-        back_row: {{ constraints.back_row | tojson | safe }} || [],
-        keep_apart: {{ constraints.keep_apart | tojson | safe }} || []
+        keep_apart: {{ constraints.keep_apart | tojson | safe }} || [],
+        compatible_pairs: {{ constraints.compatible_pairs | tojson | safe }} || []
     };
     
     let pupils = {{ pupils.pupils | tojson | safe }} || [];
 
     function getPupilName(id) {
         let p = pupils.find(x => x.id === id);
-        if(!p) return id;
+        if(!p) return "Unknown (" + id + ")";
         return (p.first_name || '') + ' ' + (p.last_name || p.name || '').trim();
     }
 
-    function getPupilIdByName(nameStr) {
-        let p = pupils.find(x => { // Case-insensitive exact match
-            let n = ((x.first_name || '') + ' ' + (x.last_name || x.name || '')).trim().toLowerCase();
-            return n === nameStr.toLowerCase().trim();
-        });
-        return p ? p.id : null;
-    }
-
     function renderAll() {
-        // Render Front
-        const frontT = document.getElementById('front-table');
-        frontT.innerHTML = '';
-        data.front_row.forEach((id, idx) => {
-            let tr = document.createElement('tr');
-            tr.innerHTML = `<td>${getPupilName(id)}</td><td><button class="error pseudo" onclick="delFront(${idx})">Remove</button></td>`;
-            frontT.appendChild(tr);
-        });
-
-        // Render Back
-        const backT = document.getElementById('back-table');
-        backT.innerHTML = '';
-        data.back_row.forEach((id, idx) => {
-            let tr = document.createElement('tr');
-            tr.innerHTML = `<td>${getPupilName(id)}</td><td><button class="error pseudo" onclick="delBack(${idx})">Remove</button></td>`;
-            backT.appendChild(tr);
-        });
+        // Render Pairs
+        const pairsT = document.getElementById('pairs-table');
+        pairsT.innerHTML = '';
+        if (data.compatible_pairs.length === 0) {
+            pairsT.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#666;">No compatible learning pairs.</td></tr>';
+        } else {
+            data.compatible_pairs.forEach((pair, idx) => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td>${getPupilName(pair[0])}</td><td>${getPupilName(pair[1])}</td><td><button class="error pseudo" onclick="delPair(${idx})">Remove</button></td>`;
+                pairsT.appendChild(tr);
+            });
+        }
 
         // Render Apart
         const apartT = document.getElementById('apart-table');
         apartT.innerHTML = '';
-        data.keep_apart.forEach((pair, idx) => {
-            let tr = document.createElement('tr');
-            tr.innerHTML = `<td>${getPupilName(pair[0])}</td><td>${getPupilName(pair[1])}</td><td><button class="error pseudo" onclick="delApart(${idx})">Remove</button></td>`;
-            apartT.appendChild(tr);
-        });
+        if (data.keep_apart.length === 0) {
+            apartT.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#666;">No keep-apart rules.</td></tr>';
+        } else {
+            data.keep_apart.forEach((pair, idx) => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td>${getPupilName(pair[0])}</td><td>${getPupilName(pair[1])}</td><td><button class="error pseudo" onclick="delApart(${idx})">Remove</button></td>`;
+                apartT.appendChild(tr);
+            });
+        }
     }
 
-    function addFront() {
-        let name = document.getElementById('add-front').value;
-        let id = getPupilIdByName(name);
-        if(id) { data.front_row.push(id); document.getElementById('add-front').value = ''; renderAll(); saveRules(); }
-        else alert("Pupil not found");
-    }
-
-    function addBack() {
-        let name = document.getElementById('add-back').value;
-        let id = getPupilIdByName(name);
-        if(id) { data.back_row.push(id); document.getElementById('add-back').value = ''; renderAll(); saveRules(); }
-        else alert("Pupil not found");
+    function addPair() {
+        let idA = document.getElementById('add-pair-a').value;
+        let idB = document.getElementById('add-pair-b').value;
+        if(idA && idB && idA !== idB) { 
+            let exists = data.compatible_pairs.some(p => (p[0] === idA && p[1] === idB) || (p[0] === idB && p[1] === idA));
+            if (!exists) {
+                data.compatible_pairs.push([idA, idB]); 
+                saveRules();
+            }
+            document.getElementById('add-pair-a').value = ''; 
+            document.getElementById('add-pair-b').value = ''; 
+            renderAll(); 
+        } else if (idA === idB && idA) {
+            showToast("Cannot pair a pupil with themselves", 'error');
+        }
     }
 
     function addApart() {
-        let nameA = document.getElementById('add-apart-a').value;
-        let nameB = document.getElementById('add-apart-b').value;
-        let idA = getPupilIdByName(nameA);
-        let idB = getPupilIdByName(nameB);
+        let idA = document.getElementById('add-apart-a').value;
+        let idB = document.getElementById('add-apart-b').value;
         if(idA && idB && idA !== idB) { 
-            data.keep_apart.push([idA, idB]); 
+            let exists = data.keep_apart.some(p => (p[0] === idA && p[1] === idB) || (p[0] === idB && p[1] === idA));
+            if (!exists) {
+                data.keep_apart.push([idA, idB]); 
+                saveRules();
+            }
             document.getElementById('add-apart-a').value = ''; 
             document.getElementById('add-apart-b').value = ''; 
             renderAll(); 
-            saveRules();
-        } else alert("Invalid or duplicate pupils");
+        } else if (idA === idB && idA) {
+            showToast("Cannot keep a pupil apart from themselves", 'error');
+        }
     }
 
-    function delFront(idx) { data.front_row.splice(idx, 1); renderAll(); saveRules(); }
-    function delBack(idx) { data.back_row.splice(idx, 1); renderAll(); saveRules(); }
-    function delApart(idx) { data.keep_apart.splice(idx, 1); renderAll(); saveRules(); }
+    function delPair(idx) { 
+        if(!confirm("Remove learning pair rule?")) return;
+        data.compatible_pairs.splice(idx, 1); 
+        renderAll(); 
+        saveRules(); 
+    }
+    
+    function delApart(idx) { 
+        if(!confirm("Remove keep-apart rule?")) return;
+        data.keep_apart.splice(idx, 1); 
+        renderAll(); 
+        saveRules(); 
+    }
 
     function saveRules() {
         fetch('/class/' + className + '/teacher', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
-        }).then(res => res.json()).then(res => {
-            // Silently saved
+        })
+        .then(res => {
+            if(!res.ok) throw new Error("Failed to save");
+            return res.json();
+        })
+        .then(res => showToast("Teacher rules saved successfully"))
+        .catch(err => {
+            console.error(err);
+            showToast("Error saving rules", "error");
         });
     }
 

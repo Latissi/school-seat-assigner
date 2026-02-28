@@ -13,6 +13,7 @@
                     <tr>
                         <th><i class="fa-solid fa-user"></i> First Name</th>
                         <th><i class="fa-solid fa-user"></i> Last Name</th>
+                        <th><i class="fa-solid fa-chart-line"></i> Performance</th>
                         <th><i class="fa-solid fa-wrench"></i> Action</th>
                     </tr>
                 </thead>
@@ -45,11 +46,27 @@
             p.last_name = parts.slice(1).join(" ");
             p.name = p.first_name + " " + p.last_name; // Keep for backwards compatibility
         }
+        if (p.performance === undefined) {
+            p.performance = 3;
+        }
     });
+
+    function updatePerformance(index, value) {
+        data.pupils[index].performance = parseInt(value, 10);
+        savePupils();
+        // Update textual display of value if desired
+        document.getElementById(`perf-val-${index}`).innerText = value;
+    }
 
     function renderPupils() {
         const tbody = document.getElementById('pupil-table');
         tbody.innerHTML = '';
+        
+        if (data.pupils.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#666;">No pupils added yet.</td></tr>';
+            return;
+        }
+
         data.pupils.forEach((p, index) => {
             let tr = document.createElement('tr');
             
@@ -60,6 +77,17 @@
             let tdLast = document.createElement('td');
             tdLast.innerText = p.last_name;
             tr.appendChild(tdLast);
+            
+            let tdPerf = document.createElement('td');
+            let perfVal = p.performance || 3;
+            tdPerf.innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="range" min="1" max="5" value="${perfVal}" 
+                           onchange="updatePerformance(${index}, this.value)">
+                    <span id="perf-val-${index}" style="min-width: 1em;">${perfVal}</span>
+                </div>
+            `;
+            tr.appendChild(tdPerf);
             
             let tdAction = document.createElement('td');
             tdAction.innerHTML = `<button class="error" onclick="deletePupil(${index})" style="padding: 0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> Delete</button>`;
@@ -87,6 +115,7 @@
                 first_name: firstName, 
                 last_name: lastName,
                 name: newName.trim(), 
+                performance: 3,
                 sit_next_to: [], 
                 avoid: [] 
             });
@@ -98,6 +127,7 @@
     }
 
     function deletePupil(index) {
+        if (!confirm("Are you sure you want to remove this pupil?")) return;
         data.pupils.splice(index, 1);
         renderPupils();
         savePupils();
@@ -108,8 +138,17 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
-        }).then(res => res.json()).then(res => {
-            // Silently saved
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to save");
+            return res.json();
+        })
+        .then(res => {
+            showToast('Pupils saved successfully');
+        })
+        .catch(err => {
+            console.error(err);
+            showToast('Error saving pupils', 'error');
         });
     }
 

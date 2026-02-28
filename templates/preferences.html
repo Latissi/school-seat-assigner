@@ -25,14 +25,17 @@
     <div class="one-third">
         <div class="card" style="padding: 1em;">
             <h3><i class="fa-solid fa-handshake"></i> New Preference Rule</h3>
-            <datalist id="pupils-list">
+            {% macro pupil_options() %}
+                <option value="" disabled selected>Select Pupil...</option>
                 {% for p in pupils.pupils %}
-                <option value="{{ (p.first_name|default('') ~ ' ' ~ p.last_name|default(p.name|default('')))|trim }}"></option>
+                <option value="{{ p.id }}">{{ (p.first_name|default('') ~ ' ' ~ p.last_name|default(p.name|default('')))|trim }}</option>
                 {% endfor %}
-            </datalist>
+            {% endmacro %}
 
             <label>Pupil A</label>
-            <input type="text" id="pref-source" list="pupils-list" placeholder="Start typing name..." autocomplete="off">
+            <select id="pref-source">
+                {{ pupil_options() }}
+            </select>
             
             <label style="margin-top: 10px;">Preference</label>
             <select id="pref-type">
@@ -41,7 +44,9 @@
             </select>
 
             <label style="margin-top: 10px;">Pupil B</label>
-            <input type="text" id="pref-target" list="pupils-list" placeholder="Start typing name..." autocomplete="off">
+            <select id="pref-target">
+                {{ pupil_options() }}
+            </select>
             
             <button onclick="addPref()" style="margin-top: 15px;"><i class="fa-solid fa-plus"></i> Add Rule</button>
             
@@ -68,21 +73,19 @@
 
     function getPupilName(id) {
         let p = data.pupils.find(x => x.id === id);
-        if(!p) return id;
+        if(!p) return "Unknown (" + id + ")";
         return (p.first_name || '') + ' ' + (p.last_name || p.name || '').trim();
-    }
-
-    function getPupilIdByName(nameStr) {
-        let p = data.pupils.find(x => { // Case-insensitive exact match
-            let n = ((x.first_name || '') + ' ' + (x.last_name || x.name || '')).trim().toLowerCase();
-            return n === nameStr.toLowerCase().trim();
-        });
-        return p ? p.id : null;
     }
 
     function renderPrefs() {
         const tbody = document.getElementById('prefs-table');
         tbody.innerHTML = '';
+        
+        if (prefsList.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#666;">No preferences added yet.</td></tr>';
+            return;
+        }
+
         prefsList.forEach((pref, index) => {
             let tr = document.createElement('tr');
             
@@ -111,35 +114,37 @@
     }
 
     function addPref() {
-        const sourceName = document.getElementById('pref-source').value;
-        const targetName = document.getElementById('pref-target').value;
+        const sourceId = document.getElementById('pref-source').value;
+        const targetId = document.getElementById('pref-target').value;
         const type = document.getElementById('pref-type').value;
 
-        const sourceId = getPupilIdByName(sourceName);
-        const targetId = getPupilIdByName(targetName);
-
         if(!sourceId) {
-            alert("Could not find Pupil A in the list.");
+            showToast("Please select Pupil A", "error");
             return;
         }
         if(!targetId) {
-            alert("Could not find Pupil B in the list.");
+            showToast("Please select Pupil B", "error");
             return;
         }
         if(sourceId === targetId) {
-            alert("A pupil cannot have a preference for themselves.");
+            showToast("A pupil cannot have a preference for themselves", "error");
             return;
         }
 
-        prefsList.push({ source: sourceId, type: type, target: targetId });
+        // Avoid exact duplicates
+        let exists = prefsList.some(p => p.source === sourceId && p.target === targetId && p.type === type);
+        if(!exists) {
+            prefsList.push({ source: sourceId, type: type, target: targetId });
+            savePrefs();
+        }
         
         document.getElementById('pref-source').value = '';
         document.getElementById('pref-target').value = '';
         renderPrefs();
-        savePrefs();
     }
 
     function deletePref(index) {
+        if(!confirm("Are you sure you want to remove this preference?")) return;
         prefsList.splice(index, 1);
         renderPrefs();
         savePrefs();
@@ -156,8 +161,8 @@
         prefsList.forEach(pref => {
             let p = data.pupils.find(x => x.id === pref.source);
             if(p) {
-                if(pref.type === 'like') p.sit_next_to.push(pref.target);
-                if(pref.type === 'dislike') p.avoid.push(pref.target);
+                if(pref.type === 'like' && !p.sit_next_to.includes(pref.target)) p.sit_next_to.push(pref.target);
+                if(pref.type === 'dislike' && !p.avoid.includes(pref.target)) p.avoid.push(pref.target);
             }
         });
 
@@ -166,8 +171,15 @@
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
-        }).then(res => res.json()).then(res => {
-            // Silently saved
+        })
+        .then(res => {
+            if(!res.ok) throw new Error("Failed to save");
+            return res.json();
+        })
+        .then(res => showToast("Preferences saved successfully"))
+        .catch(err => {
+            console.error(err);
+            showToast("Error saving preferences", "error");
         });
     }
 

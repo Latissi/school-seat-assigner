@@ -35,14 +35,11 @@
     border-color: #388e3c;
 }
 .teacher-desk {
-    background: #4a5568;
+    background: #4a5568 !important;
     color: white;
-    text-align: center;
-    padding: 15px;
-    margin-bottom: 20px;
+    border: 2px solid #2d3748 !important;
+    font-size: 2em;
     border-radius: 4px;
-    font-weight: bold;
-    letter-spacing: 1px;
 }
 .pupil-name {
     margin-top: 5px;
@@ -80,14 +77,13 @@
 <div class="layout-editor">
     <div class="layout-main">
         <div class="classroom-wrapper">
-          <div class="teacher-desk"><i class="fa-solid fa-person-chalkboard"></i> FRONT OF CLASSROOM / TEACHER DESK</div>
           <div id="result-container"></div>
         </div>
     </div>
     <div class="layout-tools">
         <div class="card" style="padding: 1em;">
             <h3><i class="fa-solid fa-gears"></i> Generate</h3>
-            <button class="success" onclick="assign()"><i class="fa-solid fa-wand-magic-sparkles"></i> Re-Generate Assignment</button>
+            <button class="success" onclick="assign()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Assignment</button>
             <hr>
             <p>Score: <span id="score" style="font-weight:bold; font-size:1.2em; color: #2e7d32;">{{ assignment.score }}</span></p>
         </div>
@@ -111,6 +107,7 @@
         let gridRows = layout.height || 8;
         let gridCols = layout.width || 10;
         let gridSeats = layout.seats || [];
+        let teacherDesk = layout.teacher_desk || null;
         
         if (gridSeats.length === 0 && layout.rows) {
             layout.rows.forEach((r, r_idx) => {
@@ -145,7 +142,10 @@
                 cell.className = 'grid-cell';
                 let key = `${r}-${c}`;
                 
-                if (seatMap[key]) {
+                if (teacherDesk && teacherDesk.row_idx === r && teacherDesk.col_idx === c) {
+                    cell.classList.add('teacher-desk');
+                    cell.innerHTML = '<i class="fa-solid fa-person-chalkboard"></i>';
+                } else if (seatMap[key]) {
                     cell.classList.add('is-seat');
                     let s = seatMap[key];
                     let pId = assignment.mapping ? assignment.mapping[s.id] : null;
@@ -169,14 +169,25 @@
         document.getElementById('score').innerText = 'Calculating...';
         fetch('/class/' + className + '/assign', {
             method: 'POST'
-        }).then(res => res.json()).then(data => {
+        })
+        .then(res => {
+            if(!res.ok) throw new Error("Server Error");
+            return res.json();
+        })
+        .then(data => {
             if(data.error) {
-                alert("Error: " + data.error);
+                showToast("Error: " + data.error, "error");
                 document.getElementById('score').innerText = 'Error';
             } else {
                 assignment = data;
                 renderResult();
+                showToast("Assignment generated successfully!");
             }
+        })
+        .catch(err => {
+            console.error(err);
+            showToast("Failed to generate assignment", "error");
+            document.getElementById('score').innerText = 'Error';
         });
     }
 
