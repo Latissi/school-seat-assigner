@@ -28,7 +28,7 @@
                 <select id="add-pair-b">
                     {{ pupil_options() }}
                 </select>
-                <button onclick="addPair()"><i class="fa-solid fa-plus"></i></button>
+                <button onclick="addPair()"><i class="fa-solid fa-plus"></i> Add Pair</button>
             </div>
         </div>
     </div>
@@ -48,7 +48,7 @@
                 <select id="add-apart-b">
                     {{ pupil_options() }}
                 </select>
-                <button onclick="addApart()"><i class="fa-solid fa-plus"></i></button>
+                <button onclick="addApart()"><i class="fa-solid fa-plus"></i> Add Rule</button>
             </div>
         </div>
     </div>
@@ -78,7 +78,7 @@
         } else {
             data.compatible_pairs.forEach((pair, idx) => {
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td>${getPupilName(pair[0])}</td><td>${getPupilName(pair[1])}</td><td><button class="error pseudo" onclick="delPair(${idx})">Remove</button></td>`;
+                tr.innerHTML = `<td>${getPupilName(pair[0])}</td><td>${getPupilName(pair[1])}</td><td><button class="error" onclick="confirmDelete(this, () => delPair(${idx}))" style="padding:0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> Delete</button></td>`;
                 pairsT.appendChild(tr);
             });
         }
@@ -91,7 +91,7 @@
         } else {
             data.keep_apart.forEach((pair, idx) => {
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td>${getPupilName(pair[0])}</td><td>${getPupilName(pair[1])}</td><td><button class="error pseudo" onclick="delApart(${idx})">Remove</button></td>`;
+                tr.innerHTML = `<td>${getPupilName(pair[0])}</td><td>${getPupilName(pair[1])}</td><td><button class="error" onclick="confirmDelete(this, () => delApart(${idx}))" style="padding:0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> Delete</button></td>`;
                 apartT.appendChild(tr);
             });
         }
@@ -100,46 +100,56 @@
     function addPair() {
         let idA = document.getElementById('add-pair-a').value;
         let idB = document.getElementById('add-pair-b').value;
-        if(idA && idB && idA !== idB) { 
-            let exists = data.compatible_pairs.some(p => (p[0] === idA && p[1] === idB) || (p[0] === idB && p[1] === idA));
-            if (!exists) {
-                data.compatible_pairs.push([idA, idB]); 
-                saveRules();
-            }
-            document.getElementById('add-pair-a').value = ''; 
-            document.getElementById('add-pair-b').value = ''; 
-            renderAll(); 
-        } else if (idA === idB && idA) {
-            showToast("Cannot pair a pupil with themselves", 'error');
+        if (!idA || !idB) {
+            showToast('Please select both pupils', 'error');
+            return;
         }
+        if (idA === idB) {
+            showToast('Cannot pair a pupil with themselves', 'error');
+            return;
+        }
+        let exists = data.compatible_pairs.some(p => (p[0] === idA && p[1] === idB) || (p[0] === idB && p[1] === idA));
+        if (!exists) {
+            data.compatible_pairs.push([idA, idB]);
+            saveRules();
+        } else {
+            showToast('This learning pair already exists', 'error');
+        }
+        document.getElementById('add-pair-a').value = '';
+        document.getElementById('add-pair-b').value = '';
+        renderAll();
     }
 
     function addApart() {
         let idA = document.getElementById('add-apart-a').value;
         let idB = document.getElementById('add-apart-b').value;
-        if(idA && idB && idA !== idB) { 
-            let exists = data.keep_apart.some(p => (p[0] === idA && p[1] === idB) || (p[0] === idB && p[1] === idA));
-            if (!exists) {
-                data.keep_apart.push([idA, idB]); 
-                saveRules();
-            }
-            document.getElementById('add-apart-a').value = ''; 
-            document.getElementById('add-apart-b').value = ''; 
-            renderAll(); 
-        } else if (idA === idB && idA) {
-            showToast("Cannot keep a pupil apart from themselves", 'error');
+        if (!idA || !idB) {
+            showToast('Please select both pupils', 'error');
+            return;
         }
+        if (idA === idB) {
+            showToast('Cannot keep a pupil apart from themselves', 'error');
+            return;
+        }
+        let exists = data.keep_apart.some(p => (p[0] === idA && p[1] === idB) || (p[0] === idB && p[1] === idA));
+        if (!exists) {
+            data.keep_apart.push([idA, idB]);
+            saveRules();
+        } else {
+            showToast('This keep-apart rule already exists', 'error');
+        }
+        document.getElementById('add-apart-a').value = '';
+        document.getElementById('add-apart-b').value = '';
+        renderAll();
     }
 
     function delPair(idx) { 
-        if(!confirm("Remove learning pair rule?")) return;
         data.compatible_pairs.splice(idx, 1); 
         renderAll(); 
         saveRules(); 
     }
     
     function delApart(idx) { 
-        if(!confirm("Remove keep-apart rule?")) return;
         data.keep_apart.splice(idx, 1); 
         renderAll(); 
         saveRules(); 

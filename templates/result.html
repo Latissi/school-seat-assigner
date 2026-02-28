@@ -67,8 +67,65 @@
 .layout-tools {
     flex: 0 0 320px;
 }
-</style>
 
+/* Custom Checkbox Toggle Switch Styles */
+.view-toggle {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fafafa;
+    transition: all 0.2s ease;
+}
+.view-toggle:hover {
+    background: #f0f0f0;
+    border-color: #bbb;
+}
+.view-toggle input[type="checkbox"] {
+    display: none;
+}
+.toggle-switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    background: #ccc;
+    border-radius: 20px;
+    margin-right: 12px;
+    transition: background 0.3s;
+    flex-shrink: 0;
+}
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+.view-toggle input[type="checkbox"]:checked + .toggle-switch::after {
+    transform: translateX(18px);
+}
+.view-toggle input[type="checkbox"]:checked + .toggle-switch.bg-red { background: red; }
+.view-toggle input[type="checkbox"]:checked + .toggle-switch.bg-blue { background: blue; }
+.view-toggle input[type="checkbox"]:checked + .toggle-switch.bg-green { background: green; }
+.view-toggle input[type="checkbox"]:checked + .toggle-switch.bg-orange { background: orange; }
+
+.view-label-text {
+    font-weight: 600;
+    color: #444;
+}
+.view-toggle input[type="checkbox"]:checked ~ .view-label-text {
+    color: #000;
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 {% endblock %}
 
 {% block content %}
@@ -76,16 +133,48 @@
 
 <div class="layout-editor">
     <div class="layout-main">
-        <div class="classroom-wrapper">
+        <div class="classroom-wrapper" style="position: relative;">
           <div id="result-container"></div>
+          <svg id="constraint-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10;"></svg>
         </div>
     </div>
     <div class="layout-tools">
         <div class="card" style="padding: 1em;">
             <h3><i class="fa-solid fa-gears"></i> Generate</h3>
-            <button class="success" onclick="assign()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate Assignment</button>
+            <div style="display: flex; gap: 0.5em; flex-wrap: wrap;">
+                <button class="success" onclick="assign()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate</button>
+                <button class="pseudo" onclick="exportImage()"><i class="fa-solid fa-camera"></i> Export PNG</button>
+            </div>
+            <div style="margin-top: 1em; font-size: 0.9em; color: #555; background: #e8f4fd; padding: 0.5em; border-radius: 4px; border: 1px solid #b6d4fe;">
+                <i class="fa-solid fa-circle-info" style="color: #0a58ca;"></i> You can manually swap pupils by drag-and-drop.
+            </div>
             <hr>
             <p>Score: <span id="score" style="font-weight:bold; font-size:1.2em; color: #2e7d32;">{{ assignment.score }}</span></p>
+        </div>
+        <div class="card" style="padding: 1em; margin-top: 1em;">
+            <h3><i class="fa-solid fa-eye"></i> Views</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.8em; margin-top: 1em;">
+                <label class="view-toggle">
+                    <input type="checkbox" id="view-keep-apart" onchange="drawConstraints()">
+                    <div class="toggle-switch bg-red"></div>
+                    <span class="view-label-text">Keep Apart</span>
+                </label>
+                <label class="view-toggle">
+                    <input type="checkbox" id="view-compatible-pairs" onchange="drawConstraints()">
+                    <div class="toggle-switch bg-blue"></div>
+                    <span class="view-label-text">Compatible Pairs</span>
+                </label>
+                <label class="view-toggle">
+                    <input type="checkbox" id="view-sit-next-to" onchange="drawConstraints()">
+                    <div class="toggle-switch bg-green"></div>
+                    <span class="view-label-text">Sit Next To</span>
+                </label>
+                <label class="view-toggle">
+                    <input type="checkbox" id="view-avoid" onchange="drawConstraints()">
+                    <div class="toggle-switch bg-orange"></div>
+                    <span class="view-label-text">Avoid</span>
+                </label>
+            </div>
         </div>
     </div>
 </div>
@@ -95,6 +184,8 @@
     let layout = {{ layout | tojson | safe }};
     let assignment = {{ assignment | tojson | safe }};
     let pupils = {{ pupils | tojson | safe }};
+    let teacher = {{ teacher | tojson | safe }};
+
     
     let pupilMap = {};
     if(pupils.pupils) {
@@ -149,12 +240,19 @@
                     cell.classList.add('is-seat');
                     let s = seatMap[key];
                     let pId = assignment.mapping ? assignment.mapping[s.id] : null;
+                    
+                    cell.dataset.seatId = s.id;
+                    cell.ondragover = handleDragOver;
+                    cell.ondrop = (e) => handleDrop(e, s.id);
 
                     if (pId) {
                         cell.classList.add('assigned');
-                        cell.innerHTML = `<i class="fa-solid fa-user" style="color:#2e7d32; font-size: 1.5em;"></i><div class="pupil-name">${pupilMap[pId] || 'Unknown'}</div>`;
+                        cell.dataset.pupilId = pId;
+                        cell.draggable = true;
+                        cell.ondragstart = (e) => handleDragStart(e, pId, s.id);
+                        cell.innerHTML = `<i class="fa-solid fa-user" style="color:#2e7d32; font-size: 1.5em; pointer-events: none;"></i><div class="pupil-name" style="pointer-events: none;">${pupilMap[pId] || 'Unknown'}</div>`;
                     } else {
-                        cell.innerHTML = `<i class="fa-solid fa-chair" style="color:#9e9e9e; font-size: 1.5em;"></i><div class="pupil-name" style="color: #9e9e9e; font-weight: normal;">Free Seat</div>`;
+                        cell.innerHTML = `<i class="fa-solid fa-chair" style="color:#9e9e9e; font-size: 1.5em; pointer-events: none;"></i><div class="pupil-name" style="color: #9e9e9e; font-weight: normal; pointer-events: none;">Free Seat</div>`;
                     }
                 }
                 
@@ -163,6 +261,151 @@
         }
         
         document.getElementById('score').innerText = assignment.score || 0;
+        drawConstraints();
+    }
+
+    let draggedPupilId = null;
+    let draggedFromSeatId = null;
+
+    function handleDragStart(e, pId, seatId) {
+        draggedPupilId = pId;
+        draggedFromSeatId = seatId;
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData('text/plain', pId);
+    }
+    
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+    }
+    
+    function handleDrop(e, targetSeatId) {
+        e.preventDefault();
+        if(!assignment.mapping) assignment.mapping = {};
+        if(draggedPupilId && draggedFromSeatId) {
+            let targetPupilId = assignment.mapping[targetSeatId];
+            
+            if (targetSeatId === draggedFromSeatId) return;
+
+            // Make the swap
+            assignment.mapping[targetSeatId] = draggedPupilId;
+            if (targetPupilId) {
+                assignment.mapping[draggedFromSeatId] = targetPupilId;
+            } else {
+                delete assignment.mapping[draggedFromSeatId];
+            }
+            
+            updateMapping(assignment.mapping);
+        }
+    }
+
+    function updateMapping(mapping) {
+        document.getElementById('score').innerText = '...';
+        fetch('/class/' + className + '/assign/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mapping: mapping })
+        })
+        .then(res => res.json())
+        .then(data => {
+            assignment = data;
+            renderResult();
+            showToast("Move saved & scored");
+        })
+        .catch(err => {
+            console.error(err);
+            showToast("Failed to update mapping", "error");
+        });
+    }
+
+    window.addEventListener('resize', drawConstraints);
+
+    function drawConstraints() {
+        const svg = document.getElementById('constraint-overlay');
+        svg.innerHTML = '';
+        
+        if (!assignment || !assignment.mapping) return;
+        
+        const container = document.getElementById('result-container');
+        const containerRect = container.getBoundingClientRect();
+
+        function getSeatCenter(pId) {
+            let seatId = Object.keys(assignment.mapping).find(key => assignment.mapping[key] === pId);
+            if (!seatId) return null;
+            
+            let cell = document.querySelector(`.grid-cell[data-seat-id="${seatId}"]`);
+            if (!cell) return null;
+            
+            let rect = cell.getBoundingClientRect();
+            // Important: we overlay SVG inside relative wrapper, so coords are relative to container DOM structure
+            // Wait, container might have padding. Instead of absolute document coords, use DOM offsets.
+            return {
+                x: cell.offsetLeft + cell.offsetWidth / 2,
+                y: cell.offsetTop + cell.offsetHeight / 2
+            };
+        }
+
+        function drawLine(p1, p2, color, weightText) {
+            let c1 = getSeatCenter(p1);
+            let c2 = getSeatCenter(p2);
+            if (!c1 || !c2) return;
+            
+            let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", c1.x);
+            line.setAttribute("y1", c1.y);
+            line.setAttribute("x2", c2.x);
+            line.setAttribute("y2", c2.y);
+            line.setAttribute("stroke", color);
+            line.setAttribute("stroke-width", "3");
+            line.setAttribute("stroke-dasharray", "5,5");
+            svg.appendChild(line);
+            
+            let cx = (c1.x + c2.x) / 2;
+            let cy = (c1.y + c2.y) / 2;
+
+            let text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", cx);
+            text.setAttribute("y", cy);
+            text.setAttribute("fill", color);
+            text.setAttribute("font-size", "14px");
+            text.setAttribute("font-weight", "bold");
+            text.setAttribute("text-anchor", "middle");
+            text.setAttribute("dominant-baseline", "middle");
+            text.setAttribute("pointer-events", "none");
+            
+            text.style.textShadow = "1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white";
+            text.textContent = weightText;
+            svg.appendChild(text);
+        }
+
+        const showKeepApart = document.getElementById('view-keep-apart') && document.getElementById('view-keep-apart').checked;
+        const showCompPairs = document.getElementById('view-compatible-pairs') && document.getElementById('view-compatible-pairs').checked;
+        const showSitNextTo = document.getElementById('view-sit-next-to') && document.getElementById('view-sit-next-to').checked;
+        const showAvoid = document.getElementById('view-avoid') && document.getElementById('view-avoid').checked;
+
+        if (showKeepApart && teacher.keep_apart) {
+            teacher.keep_apart.forEach(pair => drawLine(pair[0], pair[1], 'red', 'x100'));
+        }
+        if (showCompPairs && teacher.compatible_pairs) {
+            teacher.compatible_pairs.forEach(pair => drawLine(pair[0], pair[1], 'blue', '200'));
+        }
+        
+        if (showSitNextTo || showAvoid) {
+            if (pupils.pupils) {
+                pupils.pupils.forEach(p => {
+                    if (showSitNextTo && p.sit_next_to) {
+                        p.sit_next_to.forEach(otherId => {
+                            drawLine(p.id, otherId, 'green', '30');
+                        });
+                    }
+                    if (showAvoid && p.avoid) {
+                        p.avoid.forEach(otherId => {
+                            drawLine(p.id, otherId, 'orange', '-30');
+                        });
+                    }
+                });
+            }
+        }
     }
 
     function assign() {
@@ -189,6 +432,58 @@
             showToast("Failed to generate assignment", "error");
             document.getElementById('score').innerText = 'Error';
         });
+    }
+
+    function ensureHtml2CanvasLoaded() {
+        if (window.html2canvas) {
+            return Promise.resolve();
+        }
+
+        return new Promise((resolve, reject) => {
+            const existing = document.getElementById('html2canvas-loader');
+            if (existing) {
+                existing.addEventListener('load', () => resolve(), { once: true });
+                existing.addEventListener('error', () => reject(new Error('Failed to load html2canvas')), { once: true });
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.id = 'html2canvas-loader';
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            script.crossOrigin = 'anonymous';
+            script.referrerPolicy = 'no-referrer';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Failed to load html2canvas'));
+            document.head.appendChild(script);
+        });
+    }
+
+    async function exportImage() {
+        const wrapper = document.querySelector('.classroom-wrapper');
+        if (!wrapper) {
+            showToast("Nothing to export", "error");
+            return;
+        }
+
+        try {
+            await ensureHtml2CanvasLoaded();
+            const canvas = await html2canvas(wrapper, {
+                backgroundColor: '#ffffff',
+                scale: 2,
+                useCORS: true
+            });
+
+            const link = document.createElement('a');
+            link.download = `seat-assignment-${className}.png`;
+            link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            showToast("PNG exported", "success");
+        } catch (err) {
+            console.error(err);
+            showToast("Export failed. Please retry.", "error");
+        }
     }
 
     renderResult();

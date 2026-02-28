@@ -112,7 +112,7 @@
       <h3><i class="fa-solid fa-border-none"></i> Grid Settings</h3>
       <label>Rows: <input type="number" id="grid-rows" value="8" min="1"></label>
       <label>Cols: <input type="number" id="grid-cols" value="10" min="1"></label>
-      <button class="pseudo" onclick="initGrid()"><i class="fa-solid fa-arrows-rotate"></i> Resize Grid</button>
+      <button class="pseudo" onclick="initGrid(true)"><i class="fa-solid fa-arrows-rotate"></i> Resize Grid</button>
       <hr>
       <h3><i class="fa-solid fa-pen-ruler"></i> Edit Mode</h3>
       <div class="tool-group-title" style="margin-top: 0;">Placement</div>
@@ -121,7 +121,8 @@
       <div class="tool-group-title">Classroom Features</div>
       <label class="tool-option"><input type="radio" name="tool" value="place_teacher"> <span class="btn-surface" style="border-color:#4a5568;"><i class="fa-solid fa-person-chalkboard"></i> Place Teacher Desk</span></label>
       <hr>
-      <button class="success" onclick="saveLayout()"><i class="fa-solid fa-floppy-disk"></i> Save Layout</button>
+      <button class="success" onclick="saveLayout()" style="display:none;"><i class="fa-solid fa-floppy-disk"></i> Save Layout</button>
+      <p id="save-status" style="font-size:0.85em; color:#666; margin-top:0.5em;"></p>
     </div>
   </div>
 </div>
@@ -159,7 +160,7 @@
         });
     }
 
-    function initGrid() {
+    function initGrid(save = false) {
         gridRows = parseInt(document.getElementById('grid-rows').value) || 8;
         gridCols = parseInt(document.getElementById('grid-cols').value) || 10;
         
@@ -187,6 +188,7 @@
                 container.appendChild(cell);
             }
         }
+        if (save) saveLayout();
     }
 
     function onCellClick(r, c) {
@@ -208,9 +210,13 @@
         }
         
         initGrid(); 
+        saveLayout();
     }
 
     function saveLayout() {
+        const statusEl = document.getElementById('save-status');
+        statusEl.textContent = 'Saving\u2026';
+        statusEl.style.color = '#666';
         let seatsArray = Object.values(seatMap);
         let curLayout = {
             width: gridCols,
@@ -229,10 +235,15 @@
             return res.json();
         })
         .then(data => {
-            if(data.status === "success") showToast("Saved Layout Successfully!");
+            if(data.status === "success") {
+                statusEl.textContent = '\u2713 Saved';
+                statusEl.style.color = '#1e90ff';
+            }
         })
         .catch(err => {
             console.error(err);
+            statusEl.textContent = 'Error saving';
+            statusEl.style.color = '#d9534f';
             showToast("Error saving layout", "error");
         });
     }

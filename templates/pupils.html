@@ -13,7 +13,7 @@
                     <tr>
                         <th><i class="fa-solid fa-user"></i> First Name</th>
                         <th><i class="fa-solid fa-user"></i> Last Name</th>
-                        <th><i class="fa-solid fa-chart-line"></i> Performance</th>
+                        <th><i class="fa-solid fa-chart-line"></i> Performance <i class="fa-solid fa-circle-info" title="Lower performance means closer to the teacher"></i></th>
                         <th><i class="fa-solid fa-wrench"></i> Action</th>
                     </tr>
                 </thead>
@@ -90,7 +90,7 @@
             tr.appendChild(tdPerf);
             
             let tdAction = document.createElement('td');
-            tdAction.innerHTML = `<button class="error" onclick="deletePupil(${index})" style="padding: 0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> Delete</button>`;
+            tdAction.innerHTML = `<button class="error" onclick="confirmDelete(this, () => deletePupil(${index}))" style="padding: 0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> Delete</button>`;
             tr.appendChild(tdAction);
             
             tbody.appendChild(tr);
@@ -106,6 +106,12 @@
         const inputLast = document.getElementById('new-pupil-last');
         const firstName = inputFirst.value.trim();
         const lastName = inputLast.value.trim();
+        
+        if (!firstName && !lastName) {
+            showToast('Please enter at least a first name', 'error');
+            inputFirst.focus();
+            return;
+        }
         
         if (firstName || lastName) {
             const newName = firstName + " " + lastName;
@@ -127,7 +133,6 @@
     }
 
     function deletePupil(index) {
-        if (!confirm("Are you sure you want to remove this pupil?")) return;
         data.pupils.splice(index, 1);
         renderPupils();
         savePupils();

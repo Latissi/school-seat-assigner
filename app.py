@@ -74,7 +74,16 @@ def class_assign(class_name):
     assignment = io.load_assignment(class_name)
     layout = io.load_layout(class_name)
     pupils = io.load_pupils(class_name)
-    return render_template('result.html', class_name=class_name, assignment=assignment, layout=layout, pupils=pupils)
+    teacher = io.load_teacher_constraints(class_name)
+    return render_template('result.html', class_name=class_name, assignment=assignment, layout=layout, pupils=pupils, teacher=teacher)
+
+@app.route('/class/<class_name>/assign/update', methods=['POST'])
+def class_assign_update(class_name):
+    from engine import solver
+    mapping = request.json.get('mapping', {})
+    result = solver.evaluate_mapping(class_name, mapping)
+    io.save_assignment(class_name, result)
+    return jsonify(result)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -106,7 +106,7 @@
             tr.appendChild(tdPB);
 
             let tdAction = document.createElement('td');
-            tdAction.innerHTML = `<button class="error" onclick="deletePref(${index})" style="padding: 0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> Delete</button>`;
+            tdAction.innerHTML = `<button class="error" onclick="confirmDelete(this, () => deletePref(${index}))" style="padding: 0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> Delete</button>`;
             tr.appendChild(tdAction);
             
             tbody.appendChild(tr);
@@ -136,6 +136,8 @@
         if(!exists) {
             prefsList.push({ source: sourceId, type: type, target: targetId });
             savePrefs();
+        } else {
+            showToast('This preference rule already exists', 'error');
         }
         
         document.getElementById('pref-source').value = '';
@@ -144,7 +146,6 @@
     }
 
     function deletePref(index) {
-        if(!confirm("Are you sure you want to remove this preference?")) return;
         prefsList.splice(index, 1);
         renderPrefs();
         savePrefs();

@@ -37,6 +37,50 @@
                 setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
+
+        /**
+         * Non-blocking inline delete confirmation.
+         * On first click the button enters a "Sure?" state with a Cancel sibling.
+         * On second click the callback fires. Auto-reverts after 3 s.
+         */
+        function confirmDelete(btn, onConfirm) {
+            if (btn.dataset.confirming) {
+                // Second click — execute
+                const cancel = btn._cancelBtn;
+                if (cancel) cancel.remove();
+                delete btn.dataset.confirming;
+                clearTimeout(btn._confirmTimer);
+                onConfirm();
+                return;
+            }
+
+            const origHTML = btn.innerHTML;
+            const origClass = btn.className;
+
+            function revert() {
+                btn.innerHTML = origHTML;
+                btn.className = origClass;
+                delete btn.dataset.confirming;
+                clearTimeout(btn._confirmTimer);
+                if (btn._cancelBtn) { btn._cancelBtn.remove(); delete btn._cancelBtn; }
+                btn.onclick = () => confirmDelete(btn, onConfirm);
+            }
+
+            btn.dataset.confirming = '1';
+            btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Sure?';
+            btn.className = 'error';
+            btn._confirmTimer = setTimeout(revert, 3000);
+
+            const cancel = document.createElement('button');
+            cancel.className = 'pseudo';
+            cancel.style.marginLeft = '4px';
+            cancel.innerHTML = 'Cancel';
+            cancel.onclick = (e) => { e.stopPropagation(); revert(); };
+            btn._cancelBtn = cancel;
+            btn.insertAdjacentElement('afterend', cancel);
+
+            btn.onclick = () => confirmDelete(btn, onConfirm);
+        }
     </script>
     <header>
         <div class="nav">
@@ -45,8 +89,8 @@
             &raquo; <a href="/class/{{ class_name }}"><strong>{{ class_name }}</strong></a>
             <a href="/class/{{ class_name }}/layout" class="button pseudo"><i class="fa-solid fa-border-all"></i> Seat Layout</a>
             <a href="/class/{{ class_name }}/pupils" class="button pseudo"><i class="fa-solid fa-users"></i> Pupils</a>
-            <a href="/class/{{ class_name }}/preferences" class="button pseudo"><i class="fa-solid fa-heart"></i> Prefs</a>
-            <a href="/class/{{ class_name }}/teacher" class="button pseudo"><i class="fa-solid fa-scale-balanced"></i> Rules</a>
+            <a href="/class/{{ class_name }}/preferences" class="button pseudo"><i class="fa-solid fa-heart"></i> Preferences</a>
+            <a href="/class/{{ class_name }}/teacher" class="button pseudo"><i class="fa-solid fa-scale-balanced"></i> Teacher Rules</a>
             <a href="/class/{{ class_name }}/assign" class="button pseudo"><i class="fa-solid fa-ranking-star"></i> Assignment</a>
             {% endif %}
         </div>

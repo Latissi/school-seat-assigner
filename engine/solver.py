@@ -10,6 +10,70 @@ def assign_seats(class_name: str) -> Dict[str, Any]:
     
     return _assign_seats_ortools(layout_data, pupils_data, teacher_data)
 
+def evaluate_mapping(class_name: str, mapping: Dict[str, str]) -> Dict[str, Any]:
+    layout_data = io.load_layout(class_name)
+    pupils_data = io.load_pupils(class_name)
+    teacher_data = io.load_teacher_constraints(class_name)
+    
+    pupils_map, pupil_ids, seats, seat_distances, layout_seats = _prepare_data(layout_data, pupils_data, teacher_data)
+    
+    seat_coords = {s['id']: (s['row_idx'], s['col_idx']) for s in layout_seats}
+    
+    # Invert mapping for fast pupil -> seat lookup
+    p_to_s = {p: s for s, p in mapping.items() if p in pupil_ids and s in seats}
+    
+    score = 0
+    
+    def is_adj(p1, p2):
+        if p1 not in p_to_s or p2 not in p_to_s:
+            return False
+        s1 = p_to_s[p1]
+        s2 = p_to_s[p2]
+        r1, c1 = seat_coords[s1]
+        r2, c2 = seat_coords[s2]
+        return abs(r1 - r2) + abs(c1 - c2) == 1
+
+    # Keep apart
+    for p1, p2 in teacher_data.get('keep_apart', []):
+        if p1 in p_to_s and p2 in p_to_s:
+            s1 = p_to_s[p1]
+            s2 = p_to_s[p2]
+            r1, c1 = seat_coords[s1]
+            r2, c2 = seat_coords[s2]
+            dist = abs(r1 - r2) + abs(c1 - c2)
+            score += dist * 100
+
+    # Compatible Pairs
+    for p1, p2 in teacher_data.get('compatible_pairs', []):
+        if is_adj(p1, p2):
+            score += 200
+
+    # Pupil Preferences
+    for p in pupil_ids:
+        if p in pupils_map:
+            for nxt in pupils_map[p].get('sit_next_to', []):
+                if is_adj(p, nxt):
+                    score += 30
+            for avd in pupils_map[p].get('avoid', []):
+                if is_adj(p, avd):
+                    score -= 30
+
+    # Performance
+    max_dist = max(seat_distances.values()) if seat_distances else 1.0
+    perf_scale = 30
+    
+    for p in pupil_ids:
+        if p in p_to_s:
+            s = p_to_s[p]
+            perf = pupils_map[p].get('performance', 3)
+            perf_factor = 3 - perf
+            if perf_factor != 0:
+                dist = seat_distances[s]
+                closeness = max_dist - dist
+                score += int(perf_factor * closeness * perf_scale)
+                
+    return {"mapping": mapping, "score": score}
+
 def _prepare_data(layout_data, pupils_data, teacher_data):
     pupils = {p['id']: p for p in pupils_data.get('pupils', [])}
     pupil_ids = list(pupils.keys())
