@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}Result - {{ class_name }}{% endblock %}
+
+{% block head %}
+<style>
+#result-container {
+    display: inline-grid;
+    gap: 10px;
+    background: #f0f0f0;
+    padding: 10px;
+    border: 1px solid #ccc;
+}
+.grid-cell {
+    width: 80px;
+    height: 80px;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em;
+    text-align: center;
+    box-sizing: border-box;
+    border: 1px dashed transparent;
+}
+.grid-cell.is-seat {
+    background: #e0f7fa;
+    border: 1px solid #00acc1;
+}
+.grid-cell.assigned {
+    background: #c8e6c9;
+    border-color: #388e3c;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<h2>Seat Assignment: {{ class_name }}</h2>
+<div class="flex two">
+    <div class="three-fourth">
+        <div id="result-container"></div>
+    </div>
+    <div class="one-fourth">
+        <div class="card" style="padding: 1em;">
+            <h3>Generate</h3>
+            <button class="success" onclick="assign()">Re-Generate Assignment</button>
+            <hr>
+            <p>Score: <span id="score">{{ assignment.score }}</span></p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const className = "{{ class_name }}";
+    let layout = {{ layout | tojson | safe }};
+    let assignment = {{ assignment | tojson | safe }};
+    let pupils = {{ pupils | tojson | safe }};
+    
+    let pupilMap = {};
+    if(pupils.pupils) {
+        pupils.pupils.forEach(p => pupilMap[p.id] = p.name);
+    }
+    
+    function renderResult() {
+        let gridRows = layout.height || 8;
+        let gridCols = layout.width || 10;
+        let gridSeats = layout.seats || [];
+        
+        // Attempt parsing old format if seats array is missing 
+        if (gridSeats.length === 0 && layout.rows) {
+            layout.rows.forEach((r, r_idx) => {
+                let col = 0;
+                r.groups.forEach(g => {
+                    g.seats.forEach(s => {
+                        let tag = s.tag || 'middle';
+                        gridSeats.push({ id: s.id, row_idx: r_idx, col_idx: col, tag: tag });
+                        col++;
+                    });
+                    col++;
+                });
+            });
+        }
+        
+        const container = document.getElementById('result-container');
+        container.style.gridTemplateRows = `repeat(${gridRows}, 80px)`;
+        container.style.gridTemplateColumns = `repeat(${gridCols}, 80px)`;
+        container.innerHTML = '';
+        
+        if (gridSeats.length === 0) {
+            container.innerHTML = '<p>No layout defined. Please define a seat layout first.</p>';
+            return;
+        }
+        
+        let seatMap = {};
+        gridSeats.forEach(s => { seatMap[`${s.row_idx}-${s.col_idx}`] = s; });
+
+        for (let r = 0; r < gridRows; r++) {
+            for (let c = 0; c < gridCols; c++) {
+                let cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                let key = `${r}-${c}`;
+                
+                if (seatMap[key]) {
+                    cell.classList.add('is-seat');
+                    let s = seatMap[key];
+                    let pId = assignment.mapping ? assignment.mapping[s.id] : null;
+                    
+                    if (pId) {
+                        cell.classList.add('assigned');
+                        cell.innerHTML = `<strong>${pupilMap[pId] || pId}</strong><br><small>(${s.id})</small>`;
+                    } else {
+                        cell.innerHTML = `<small>Free<br>${s.id}</small>`;
+                    }
+                }
+                
+                container.appendChild(cell);
+            }
+        }
+        
+        document.getElementById('score').innerText = assignment.score || 0;
+    }
+
+    function assign() {
+        document.getElementById('score').innerText = 'Calculating...';
+        fetch('/class/' + className + '/assign', {
+            method: 'POST'
+        }).then(res => res.json()).then(data => {
+            if(data.error) {
+                alert("Error: " + data.error);
+                document.getElementById('score').innerText = 'Error';
+            } else {
+                assignment = data;
+                renderResult();
+            }
+        });
+    }
+
+    renderResult();
+</script>
+{% endblock %}

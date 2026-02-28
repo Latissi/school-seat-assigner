@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}School Seat Assigner{% endblock %}</title>
+    <!-- Simple CSS framework for quick styling -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/picnic">
+    <style>
+        body { padding: 2em; max-width: 1200px; margin: 0 auto; }
+        .nav { padding: 1em 0; margin-bottom: 2em; border-bottom: 1px solid #eee; }
+        .nav a { margin-right: 1em; }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header>
+        <div class="nav">
+            <a href="/">Home</a>
+            {% if class_name %}
+            &raquo; <a href="/class/{{ class_name }}">{{ class_name }}</a>
+            <a href="/class/{{ class_name }}/layout" class="button pseudo">Seat Layout</a>
+            <a href="/class/{{ class_name }}/pupils" class="button pseudo">Pupils & Preferences</a>
+            <a href="/class/{{ class_name }}/teacher" class="button pseudo">Teacher Rules</a>
+            <a href="/class/{{ class_name }}/assign" class="button pseudo">View Assignment</a>
+            {% endif %}
+        </div>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

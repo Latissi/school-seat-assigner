@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Teacher Rules - {{ class_name }}{% endblock %}
+
+{% block content %}
+<h2>Teacher Rules: {{ class_name }}</h2>
+<div class="card" style="padding: 1em;">
+    <p>Select multiple pupils dynamically or provide comma-separated IDs.</p>
+    
+    <label>Front Row Pupils (IDs)</label>
+    <input type="text" id="front-row" placeholder="p1, p2" value="{{ constraints.front_row | join(', ') }}">
+    
+    <label>Back Row Pupils (IDs)</label>
+    <input type="text" id="back-row" placeholder="p3, p4" value="{{ constraints.back_row | join(', ') }}">
+    
+    <label>Keep Apart Pairs (Format: p1:p2, p3:p4)</label>
+    <input type="text" id="keep-apart" placeholder="p1:p2, p3:p4" value="">
+    <small>Current mapping array format converted to simplified UI string.</small>
+    
+    <br><br>
+    <button class="success" onclick="saveRules()">Save Rules</button>
+</div>
+
+<script>
+    const className = "{{ class_name }}";
+    let keepApartRaw = {{ constraints.keep_apart | tojson | safe }};
+    if(!keepApartRaw) keepApartRaw = [];
+    
+    document.getElementById('keep-apart').value = keepApartRaw.map(pair => pair.join(':')).join(', ');
+
+    function saveRules() {
+        const front = document.getElementById('front-row').value.split(',').map(s=>s.trim()).filter(s=>s);
+        const back = document.getElementById('back-row').value.split(',').map(s=>s.trim()).filter(s=>s);
+        
+        const apartStr = document.getElementById('keep-apart').value;
+        const apart = apartStr.split(',').map(s => {
+            let p = s.split(':');
+            return p.length === 2 ? [p[0].trim(), p[1].trim()] : [];
+        }).filter(a => a.length === 2);
+
+        fetch('/class/' + className + '/teacher', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                front_row: front,
+                back_row: back,
+                keep_apart: apart
+            })
+        }).then(res => res.json()).then(res => {
+            if(res.status==="success") alert("Saved!");
+        });
+    }
+</script>
+{% endblock %}

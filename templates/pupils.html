@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Pupils - {{ class_name }}{% endblock %}
+
+{% block content %}
+<h2>Pupils & Preferences: {{ class_name }}</h2>
+<div class="flex two">
+    <div class="two-third">
+        <div class="card" style="padding: 1em;">
+            <table class="primary">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Preferences</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="pupil-table">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="one-third">
+        <div class="card" style="padding: 1em;">
+            <h3>New Pupil</h3>
+            <input type="text" id="new-pupil-name" placeholder="Name">
+            <button onclick="addPupil()">Add</button>
+            <hr>
+            <button class="success" onclick="savePupils()">Save All</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const className = "{{ class_name }}";
+    let data = {{ pupils | tojson | safe }};
+    if(!data.pupils) data.pupils = [];
+
+    function renderPupils() {
+        const tbody = document.getElementById('pupil-table');
+        tbody.innerHTML = '';
+        data.pupils.forEach((p, index) => {
+            let tr = document.createElement('tr');
+            
+            // ID
+            let tdId = document.createElement('td');
+            tdId.innerText = p.id;
+            tr.appendChild(tdId);
+            
+            // Name
+            let tdName = document.createElement('td');
+            tdName.innerText = p.name;
+            tr.appendChild(tdName);
+            
+            // Prefs
+            let tdPrefs = document.createElement('td');
+            tdPrefs.innerHTML = `
+                <small><strong>Sit Next:</strong> ${(p.sit_next_to || []).join(', ')}</small><br>
+                <small><strong>Avoid:</strong> ${(p.avoid || []).join(', ')}</small>
+                <button class="pseudo" onclick="editPrefs(${index})">Edit Preferences</button>
+            `;
+            tr.appendChild(tdPrefs);
+
+            // Action
+            let tdAction = document.createElement('td');
+            tdAction.innerHTML = `<button class="error" onclick="deletePupil(${index})">Del</button>`;
+            tr.appendChild(tdAction);
+            
+            tbody.appendChild(tr);
+        });
+    }
+
+    function addPupil() {
+        const input = document.getElementById('new-pupil-name');
+        const name = input.value.trim();
+        if(name) {
+            let id = 'p' + (data.pupils.length + 1) + '-' + name.toLowerCase().replace(/\s+/g, '');
+            // check dupe
+            if(!data.pupils.find(p => p.id === id)){
+                data.pupils.push({ id: id, name: name, sit_next_to: [], avoid: [] });
+                input.value = '';
+                renderPupils();
+            } else {
+                alert("ID conflict. Choose different name.");
+            }
+        }
+    }
+
+    function deletePupil(index) {
+        data.pupils.splice(index, 1);
+        renderPupils();
+    }
+    
+    function editPrefs(index) {
+        const p = data.pupils[index];
+        const names = data.pupils.filter(x => x.id !== p.id).map(x => x.id).join(', ');
+        
+        const nextTo = prompt(`Sit next to (comma separated IDs). Available:\n${names}`, (p.sit_next_to||[]).join(', '));
+        if(nextTo !== null) {
+            p.sit_next_to = nextTo.split(',').map(s=>s.trim()).filter(s=>s);
+        }
+        
+        const avoid = prompt(`Avoid (comma separated IDs). Available:\n${names}`, (p.avoid||[]).join(', '));
+        if(avoid !== null) {
+            p.avoid = avoid.split(',').map(s=>s.trim()).filter(s=>s);
+        }
+        renderPupils();
+    }
+
+    function savePupils() {
+        fetch('/class/' + className + '/pupils', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        }).then(res => res.json()).then(res => {
+            if(res.status==="success") alert("Saved!");
+        });
+    }
+
+    renderPupils();
+</script>
+{% endblock %}

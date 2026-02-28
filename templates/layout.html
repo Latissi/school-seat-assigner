@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}{{ class_name }} Layout Editor{% endblock %}
+
+{% block head %}
+<style>
+#grid-container {
+    display: inline-grid;
+    gap: 10px;
+    background: #f0f0f0;
+    padding: 10px;
+    border: 1px solid #ccc;
+    user-select: none;
+}
+.grid-cell {
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border: 1px dashed #ccc;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7em;
+    position: relative;
+    box-sizing: border-box;
+}
+.grid-cell.is-seat {
+    background: #e0f7fa;
+    border: 2px solid #00acc1;
+}
+.grid-cell .tag-label {
+    font-size: 0.8em;
+    color: #666;
+    position: absolute;
+    bottom: 2px;
+}
+.grid-cell.front-tag { border-top: 5px solid #f44336; }
+.grid-cell.back-tag { border-bottom: 5px solid #4caf50; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex two">
+  <div class="three-fourth">
+    <h2>Layout Editor: {{ class_name }}</h2>
+    <div id="grid-container"></div>
+  </div>
+  <div class="one-fourth">
+    <div class="card" style="padding: 1em;">
+      <h3>Grid Settings</h3>
+      <label>Rows: <input type="number" id="grid-rows" value="8" min="1"></label>
+      <label>Cols: <input type="number" id="grid-cols" value="10" min="1"></label>
+      <button class="pseudo" onclick="initGrid()">Resize Grid / Refresh</button>
+      <hr>
+      <h3>Paint Tool</h3>
+      <label><input type="radio" name="tool" value="toggle_seat" checked> Toggle Seat</label><br>
+      <label><input type="radio" name="tool" value="tag_front"> Mark Front Row</label><br>
+      <label><input type="radio" name="tool" value="tag_back"> Mark Back Row</label><br>
+      <label><input type="radio" name="tool" value="tag_middle"> Mark Middle (Default)</label><br>
+      <hr>
+      <button class="success" onclick="saveLayout()">Save Layout</button>
+    </div>
+  </div>
+</div>
+
+<script>
+    const className = "{{ class_name }}";
+    let layout = {{ layout | tojson | safe }};
+    
+    let gridRows = layout.height || 8;
+    let gridCols = layout.width || 10;
+    let gridSeats = layout.seats || [];
+    
+    document.getElementById('grid-rows').value = gridRows;
+    document.getElementById('grid-cols').value = gridCols;
+    
+    // Convert array of seats to dictionary for fast lookup
+    let seatMap = {};
+    if (gridSeats.length > 0) {
+        gridSeats.forEach(s => {
+            seatMap[`${s.row_idx}-${s.col_idx}`] = s;
+        });
+    } else if (layout.rows) {
+        // Migration from old layout format if it exists
+        layout.rows.forEach((r, r_idx) => {
+            let col = 0;
+            r.groups.forEach(g => {
+                g.seats.forEach(s => {
+                    let tag = s.tag || 'middle';
+                    seatMap[`${r_idx}-${col}`] = { id: `r${r_idx}c${col}`, row_idx: r_idx, col_idx: col, tag: tag };
+                    col++;
+                });
+                col++; // gap between groups
+            });
+        });
+    }
+
+    function initGrid() {
+        gridRows = parseInt(document.getElementById('grid-rows').value) || 8;
+        gridCols = parseInt(document.getElementById('grid-cols').value) || 10;
+        
+        let container = document.getElementById('grid-container');
+        container.style.gridTemplateRows = `repeat(${gridRows}, 60px)`;
+        container.style.gridTemplateColumns = `repeat(${gridCols}, 60px)`;
+        container.innerHTML = '';
+        
+        for (let r = 0; r < gridRows; r++) {
+            for (let c = 0; c < gridCols; c++) {
+                let cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                let key = `${r}-${c}`;
+                
+                if (seatMap[key]) {
+                    cell.classList.add('is-seat');
+                    let tag = seatMap[key].tag;
+                    if (tag === 'front') cell.classList.add('front-tag');
+                    if (tag === 'back') cell.classList.add('back-tag');
+                    cell.innerHTML = `<strong>${seatMap[key].id}</strong><span class="tag-label">${tag}</span>`;
+                }
+                
+                cell.onclick = () => onCellClick(r, c);
+                container.appendChild(cell);
+            }
+        }
+    }
+
+    function onCellClick(r, c) {
+        const tool = document.querySelector('input[name="tool"]:checked').value;
+        const key = `${r}-${c}`;
+        
+        if (tool === 'toggle_seat') {
+            if (seatMap[key]) {
+                delete seatMap[key];
+            } else {
+                seatMap[key] = { id: `s-${r}-${c}`, row_idx: r, col_idx: c, tag: 'middle' };
+            }
+        } else if (seatMap[key]) {
+            if (tool === 'tag_front') seatMap[key].tag = 'front';
+            if (tool === 'tag_back') seatMap[key].tag = 'back';
+            if (tool === 'tag_middle') seatMap[key].tag = 'middle';
+        }
+        
+        initGrid(); 
+    }
+
+    function saveLayout() {
+        let seatsArray = Object.values(seatMap);
+        let curLayout = {
+            width: gridCols,
+            height: gridRows,
+            seats: seatsArray
+        };
+        
+        fetch('/class/' + className + '/layout', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(curLayout)
+        }).then(res => res.json()).then(data => {
+            if(data.status==="success") alert("Saved Layout Successfully!");
+        });
+    }
+
+    initGrid();
+</script>
+{% endblock %}

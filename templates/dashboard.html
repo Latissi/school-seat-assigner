@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}{{ class_name }} Dashboard{% endblock %}
+
+{% block content %}
+<h1>Class: {{ class_name }}</h1>
+<div class="flex two">
+    <div class="card" style="padding: 1em;">
+        <h3>Seat Layout</h3>
+        <p>Define the physical arrangement of the classroom.</p>
+        <a href="/class/{{ class_name }}/layout" class="button">Edit Layout</a>
+    </div>
+    <div class="card" style="padding: 1em;">
+        <h3>Pupils</h3>
+        <p>Manage the list of pupils and their seating preferences.</p>
+        <a href="/class/{{ class_name }}/pupils" class="button">Edit Pupils</a>
+    </div>
+    <div class="card" style="padding: 1em;">
+        <h3>Teacher Constraints</h3>
+        <p>Set strict rules (e.g. sit apart, sit in front row).</p>
+        <a href="/class/{{ class_name }}/teacher" class="button">Edit Rules</a>
+    </div>
+    <div class="card" style="padding: 1em;">
+        <h3>Generate Assignment</h3>
+        <p>Run the algorithm to place students in seats.</p>
+        <a href="/class/{{ class_name }}/assign" class="button success">Assign Seats</a>
+    </div>
+</div>
+{% endblock %}
