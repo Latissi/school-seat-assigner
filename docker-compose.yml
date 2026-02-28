@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: school-seat-assigner:latest
+    container_name: seat-assigner
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/workspace/data
+    restart: unless-stopped

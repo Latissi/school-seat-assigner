@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Preferences - {{ class_name }}{% endblock %}
+
+{% block content %}
+<h2><i class="fa-solid fa-heart"></i> Pupil Preferences: {{ class_name }}</h2>
+
+<div class="flex two">
+    <div class="two-third">
+        <div class="card" style="padding: 1em;">
+            <table class="primary">
+                <thead>
+                    <tr>
+                        <th>Pupil A</th>
+                        <th>Preference</th>
+                        <th>Pupil B</th>
+                        <th><i class="fa-solid fa-wrench"></i> Action</th>
+                    </tr>
+                </thead>
+                <tbody id="prefs-table">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="one-third">
+        <div class="card" style="padding: 1em;">
+            <h3><i class="fa-solid fa-handshake"></i> New Preference Rule</h3>
+            <datalist id="pupils-list">
+                {% for p in pupils.pupils %}
+                <option value="{{ (p.first_name|default('') ~ ' ' ~ p.last_name|default(p.name|default('')))|trim }}"></option>
+                {% endfor %}
+            </datalist>
+
+            <label>Pupil A</label>
+            <input type="text" id="pref-source" list="pupils-list" placeholder="Start typing name..." autocomplete="off">
+            
+            <label style="margin-top: 10px;">Preference</label>
+            <select id="pref-type">
+                <option value="like">Likes (Sit Next To)</option>
+                <option value="dislike">Dislikes (Avoid)</option>
+            </select>
+
+            <label style="margin-top: 10px;">Pupil B</label>
+            <input type="text" id="pref-target" list="pupils-list" placeholder="Start typing name..." autocomplete="off">
+            
+            <button onclick="addPref()" style="margin-top: 15px;"><i class="fa-solid fa-plus"></i> Add Rule</button>
+            
+        </div>
+    </div>
+</div>
+
+<script>
+    const className = "{{ class_name }}";
+    let data = {{ pupils | tojson | safe }};
+    if(!data.pupils) data.pupils = [];
+
+    let prefsList = [];
+    
+    // Map existing prefs into flat list
+    data.pupils.forEach(p => {
+        (p.sit_next_to || []).forEach(targetId => {
+            prefsList.push({ source: p.id, type: 'like', target: targetId });
+        });
+        (p.avoid || []).forEach(targetId => {
+            prefsList.push({ source: p.id, type: 'dislike', target: targetId });
+        });
+    });
+
+    function getPupilName(id) {
+        let p = data.pupils.find(x => x.id === id);
+        if(!p) return id;
+        return (p.first_name || '') + ' ' + (p.last_name || p.name || '').trim();
+    }
+
+    function getPupilIdByName(nameStr) {
+        let p = data.pupils.find(x => { // Case-insensitive exact match
+            let n = ((x.first_name || '') + ' ' + (x.last_name || x.name || '')).trim().toLowerCase();
+            return n === nameStr.toLowerCase().trim();
+        });
+        return p ? p.id : null;
+    }
+
+    function renderPrefs() {
+        const tbody = document.getElementById('prefs-table');
+        tbody.innerHTML = '';
+        prefsList.forEach((pref, index) => {
+            let tr = document.createElement('tr');
+            
+            let tdPA = document.createElement('td');
+            tdPA.innerText = getPupilName(pref.source);
+            tr.appendChild(tdPA);
+            
+            let tdType = document.createElement('td');
+            if (pref.type === 'like') {
+                tdType.innerHTML = `<span class="label success"><i class="fa-solid fa-thumbs-up"></i> Likes</span>`;
+            } else {
+                tdType.innerHTML = `<span class="label error"><i class="fa-solid fa-thumbs-down"></i> Dislikes</span>`;
+            }
+            tr.appendChild(tdType);
+            
+            let tdPB = document.createElement('td');
+            tdPB.innerText = getPupilName(pref.target);
+            tr.appendChild(tdPB);
+
+            let tdAction = document.createElement('td');
+            tdAction.innerHTML = `<button class="error" onclick="deletePref(${index})" style="padding: 0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> Delete</button>`;
+            tr.appendChild(tdAction);
+            
+            tbody.appendChild(tr);
+        });
+    }
+
+    function addPref() {
+        const sourceName = document.getElementById('pref-source').value;
+        const targetName = document.getElementById('pref-target').value;
+        const type = document.getElementById('pref-type').value;
+
+        const sourceId = getPupilIdByName(sourceName);
+        const targetId = getPupilIdByName(targetName);
+
+        if(!sourceId) {
+            alert("Could not find Pupil A in the list.");
+            return;
+        }
+        if(!targetId) {
+            alert("Could not find Pupil B in the list.");
+            return;
+        }
+        if(sourceId === targetId) {
+            alert("A pupil cannot have a preference for themselves.");
+            return;
+        }
+
+        prefsList.push({ source: sourceId, type: type, target: targetId });
+        
+        document.getElementById('pref-source').value = '';
+        document.getElementById('pref-target').value = '';
+        renderPrefs();
+        savePrefs();
+    }
+
+    function deletePref(index) {
+        prefsList.splice(index, 1);
+        renderPrefs();
+        savePrefs();
+    }
+
+    function savePrefs() {
+        // Clear old prefs
+        data.pupils.forEach(p => { 
+            p.sit_next_to = []; 
+            p.avoid = []; 
+        });
+        
+        // Re-apply current flat prefs list
+        prefsList.forEach(pref => {
+            let p = data.pupils.find(x => x.id === pref.source);
+            if(p) {
+                if(pref.type === 'like') p.sit_next_to.push(pref.target);
+                if(pref.type === 'dislike') p.avoid.push(pref.target);
+            }
+        });
+
+        // Save
+        fetch('/class/' + className + '/pupils', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        }).then(res => res.json()).then(res => {
+            // Silently saved
+        });
+    }
+
+    renderPrefs();
+</script>
+{% endblock %}

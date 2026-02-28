@@ -3,17 +3,17 @@
 {% block title %}Pupils - {{ class_name }}{% endblock %}
 
 {% block content %}
-<h2>Pupils & Preferences: {{ class_name }}</h2>
+<h2><i class="fa-solid fa-users"></i> Pupils: {{ class_name }}</h2>
+
 <div class="flex two">
     <div class="two-third">
         <div class="card" style="padding: 1em;">
             <table class="primary">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Preferences</th>
-                        <th>Action</th>
+                        <th><i class="fa-solid fa-user"></i> First Name</th>
+                        <th><i class="fa-solid fa-user"></i> Last Name</th>
+                        <th><i class="fa-solid fa-wrench"></i> Action</th>
                     </tr>
                 </thead>
                 <tbody id="pupil-table">
@@ -23,11 +23,11 @@
     </div>
     <div class="one-third">
         <div class="card" style="padding: 1em;">
-            <h3>New Pupil</h3>
-            <input type="text" id="new-pupil-name" placeholder="Name">
-            <button onclick="addPupil()">Add</button>
-            <hr>
-            <button class="success" onclick="savePupils()">Save All</button>
+            <h3><i class="fa-solid fa-user-plus"></i> New Pupil</h3>
+            <input type="text" id="new-pupil-first" placeholder="First Name">
+            <input type="text" id="new-pupil-last" placeholder="Last Name" style="margin-top: 10px;">
+            <button onclick="addPupil()" style="margin-top: 10px;"><i class="fa-solid fa-plus"></i> Add</button>
+            
         </div>
     </div>
 </div>
@@ -37,75 +37,70 @@
     let data = {{ pupils | tojson | safe }};
     if(!data.pupils) data.pupils = [];
 
+    // Fallback: migrate old 'name' string to 'first_name' and 'last_name' if needed
+    data.pupils.forEach(p => {
+        if (!p.first_name || !p.last_name) {
+            let parts = (p.name || "Unknown Pupil").split(" ");
+            p.first_name = parts[0];
+            p.last_name = parts.slice(1).join(" ");
+            p.name = p.first_name + " " + p.last_name; // Keep for backwards compatibility
+        }
+    });
+
     function renderPupils() {
         const tbody = document.getElementById('pupil-table');
         tbody.innerHTML = '';
         data.pupils.forEach((p, index) => {
             let tr = document.createElement('tr');
             
-            // ID
-            let tdId = document.createElement('td');
-            tdId.innerText = p.id;
-            tr.appendChild(tdId);
+            let tdFirst = document.createElement('td');
+            tdFirst.innerText = p.first_name;
+            tr.appendChild(tdFirst);
             
-            // Name
-            let tdName = document.createElement('td');
-            tdName.innerText = p.name;
-            tr.appendChild(tdName);
+            let tdLast = document.createElement('td');
+            tdLast.innerText = p.last_name;
+            tr.appendChild(tdLast);
             
-            // Prefs
-            let tdPrefs = document.createElement('td');
-            tdPrefs.innerHTML = `
-                <small><strong>Sit Next:</strong> ${(p.sit_next_to || []).join(', ')}</small><br>
-                <small><strong>Avoid:</strong> ${(p.avoid || []).join(', ')}</small>
-                <button class="pseudo" onclick="editPrefs(${index})">Edit Preferences</button>
-            `;
-            tr.appendChild(tdPrefs);
-
-            // Action
             let tdAction = document.createElement('td');
-            tdAction.innerHTML = `<button class="error" onclick="deletePupil(${index})">Del</button>`;
+            tdAction.innerHTML = `<button class="error" onclick="deletePupil(${index})" style="padding: 0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> Delete</button>`;
             tr.appendChild(tdAction);
             
             tbody.appendChild(tr);
         });
     }
 
+    function generateId() {
+        return 'p-' + Math.random().toString(36).substr(2, 9);
+    }
+
     function addPupil() {
-        const input = document.getElementById('new-pupil-name');
-        const name = input.value.trim();
-        if(name) {
-            let id = 'p' + (data.pupils.length + 1) + '-' + name.toLowerCase().replace(/\s+/g, '');
-            // check dupe
-            if(!data.pupils.find(p => p.id === id)){
-                data.pupils.push({ id: id, name: name, sit_next_to: [], avoid: [] });
-                input.value = '';
-                renderPupils();
-            } else {
-                alert("ID conflict. Choose different name.");
-            }
+        const inputFirst = document.getElementById('new-pupil-first');
+        const inputLast = document.getElementById('new-pupil-last');
+        const firstName = inputFirst.value.trim();
+        const lastName = inputLast.value.trim();
+        
+        if (firstName || lastName) {
+            const newName = firstName + " " + lastName;
+            const newId = generateId();
+            data.pupils.push({ 
+                id: newId, 
+                first_name: firstName, 
+                last_name: lastName,
+                name: newName.trim(), 
+                sit_next_to: [], 
+                avoid: [] 
+            });
+            inputFirst.value = '';
+            inputLast.value = '';
+            renderPupils();
+            savePupils();
         }
     }
 
     function deletePupil(index) {
         data.pupils.splice(index, 1);
         renderPupils();
-    }
-    
-    function editPrefs(index) {
-        const p = data.pupils[index];
-        const names = data.pupils.filter(x => x.id !== p.id).map(x => x.id).join(', ');
-        
-        const nextTo = prompt(`Sit next to (comma separated IDs). Available:\n${names}`, (p.sit_next_to||[]).join(', '));
-        if(nextTo !== null) {
-            p.sit_next_to = nextTo.split(',').map(s=>s.trim()).filter(s=>s);
-        }
-        
-        const avoid = prompt(`Avoid (comma separated IDs). Available:\n${names}`, (p.avoid||[]).join(', '));
-        if(avoid !== null) {
-            p.avoid = avoid.split(',').map(s=>s.trim()).filter(s=>s);
-        }
-        renderPupils();
+        savePupils();
     }
 
     function savePupils() {
@@ -114,7 +109,7 @@
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
         }).then(res => res.json()).then(res => {
-            if(res.status==="success") alert("Saved!");
+            // Silently saved
         });
     }
 

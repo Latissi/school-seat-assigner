@@ -3,52 +3,152 @@
 {% block title %}Teacher Rules - {{ class_name }}{% endblock %}
 
 {% block content %}
-<h2>Teacher Rules: {{ class_name }}</h2>
-<div class="card" style="padding: 1em;">
-    <p>Select multiple pupils dynamically or provide comma-separated IDs.</p>
+<h2><i class="fa-solid fa-scale-balanced"></i> Teacher Rules: {{ class_name }}</h2>
+
+<datalist id="pupils-list">
+    {% for p in pupils.pupils %}
+    <option value="{{ (p.first_name|default('') ~ ' ' ~ p.last_name|default(p.name|default('')))|trim }}"></option>
+    {% endfor %}
+</datalist>
+
+<div class="flex two">
+    <div class="half">
+        <div class="card" style="padding: 1em;">
+            <h3><i class="fa-solid fa-arrow-up"></i> Front Row Pupils</h3>
+            <table class="primary">
+                <tbody id="front-table"></tbody>
+            </table>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <input type="text" id="add-front" list="pupils-list" placeholder="Pupil Name..." autocomplete="off">
+                <button onclick="addFront()"><i class="fa-solid fa-plus"></i></button>
+            </div>
+        </div>
+        
+        <div class="card" style="padding: 1em; margin-top: 1em;">
+            <h3><i class="fa-solid fa-arrow-down"></i> Back Row Pupils</h3>
+            <table class="primary">
+                <tbody id="back-table"></tbody>
+            </table>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <input type="text" id="add-back" list="pupils-list" placeholder="Pupil Name..." autocomplete="off">
+                <button onclick="addBack()"><i class="fa-solid fa-plus"></i></button>
+            </div>
+        </div>
+    </div>
     
-    <label>Front Row Pupils (IDs)</label>
-    <input type="text" id="front-row" placeholder="p1, p2" value="{{ constraints.front_row | join(', ') }}">
-    
-    <label>Back Row Pupils (IDs)</label>
-    <input type="text" id="back-row" placeholder="p3, p4" value="{{ constraints.back_row | join(', ') }}">
-    
-    <label>Keep Apart Pairs (Format: p1:p2, p3:p4)</label>
-    <input type="text" id="keep-apart" placeholder="p1:p2, p3:p4" value="">
-    <small>Current mapping array format converted to simplified UI string.</small>
-    
-    <br><br>
-    <button class="success" onclick="saveRules()">Save Rules</button>
+    <div class="half">
+        <div class="card" style="padding: 1em;">
+            <h3><i class="fa-solid fa-people-arrows"></i> Keep Apart (Always)</h3>
+            <table class="primary">
+                <thead><tr><th>A</th><th>B</th><th>Action</th></tr></thead>
+                <tbody id="apart-table"></tbody>
+            </table>
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <input type="text" id="add-apart-a" list="pupils-list" placeholder="Pupil A..." autocomplete="off">
+                <input type="text" id="add-apart-b" list="pupils-list" placeholder="Pupil B..." autocomplete="off">
+                <button onclick="addApart()"><i class="fa-solid fa-plus"></i></button>
+            </div>
+        </div>
+
+        
+    </div>
 </div>
 
 <script>
     const className = "{{ class_name }}";
-    let keepApartRaw = {{ constraints.keep_apart | tojson | safe }};
-    if(!keepApartRaw) keepApartRaw = [];
+    let data = {
+        front_row: {{ constraints.front_row | tojson | safe }} || [],
+        back_row: {{ constraints.back_row | tojson | safe }} || [],
+        keep_apart: {{ constraints.keep_apart | tojson | safe }} || []
+    };
     
-    document.getElementById('keep-apart').value = keepApartRaw.map(pair => pair.join(':')).join(', ');
+    let pupils = {{ pupils.pupils | tojson | safe }} || [];
+
+    function getPupilName(id) {
+        let p = pupils.find(x => x.id === id);
+        if(!p) return id;
+        return (p.first_name || '') + ' ' + (p.last_name || p.name || '').trim();
+    }
+
+    function getPupilIdByName(nameStr) {
+        let p = pupils.find(x => { // Case-insensitive exact match
+            let n = ((x.first_name || '') + ' ' + (x.last_name || x.name || '')).trim().toLowerCase();
+            return n === nameStr.toLowerCase().trim();
+        });
+        return p ? p.id : null;
+    }
+
+    function renderAll() {
+        // Render Front
+        const frontT = document.getElementById('front-table');
+        frontT.innerHTML = '';
+        data.front_row.forEach((id, idx) => {
+            let tr = document.createElement('tr');
+            tr.innerHTML = `<td>${getPupilName(id)}</td><td><button class="error pseudo" onclick="delFront(${idx})">Remove</button></td>`;
+            frontT.appendChild(tr);
+        });
+
+        // Render Back
+        const backT = document.getElementById('back-table');
+        backT.innerHTML = '';
+        data.back_row.forEach((id, idx) => {
+            let tr = document.createElement('tr');
+            tr.innerHTML = `<td>${getPupilName(id)}</td><td><button class="error pseudo" onclick="delBack(${idx})">Remove</button></td>`;
+            backT.appendChild(tr);
+        });
+
+        // Render Apart
+        const apartT = document.getElementById('apart-table');
+        apartT.innerHTML = '';
+        data.keep_apart.forEach((pair, idx) => {
+            let tr = document.createElement('tr');
+            tr.innerHTML = `<td>${getPupilName(pair[0])}</td><td>${getPupilName(pair[1])}</td><td><button class="error pseudo" onclick="delApart(${idx})">Remove</button></td>`;
+            apartT.appendChild(tr);
+        });
+    }
+
+    function addFront() {
+        let name = document.getElementById('add-front').value;
+        let id = getPupilIdByName(name);
+        if(id) { data.front_row.push(id); document.getElementById('add-front').value = ''; renderAll(); saveRules(); }
+        else alert("Pupil not found");
+    }
+
+    function addBack() {
+        let name = document.getElementById('add-back').value;
+        let id = getPupilIdByName(name);
+        if(id) { data.back_row.push(id); document.getElementById('add-back').value = ''; renderAll(); saveRules(); }
+        else alert("Pupil not found");
+    }
+
+    function addApart() {
+        let nameA = document.getElementById('add-apart-a').value;
+        let nameB = document.getElementById('add-apart-b').value;
+        let idA = getPupilIdByName(nameA);
+        let idB = getPupilIdByName(nameB);
+        if(idA && idB && idA !== idB) { 
+            data.keep_apart.push([idA, idB]); 
+            document.getElementById('add-apart-a').value = ''; 
+            document.getElementById('add-apart-b').value = ''; 
+            renderAll(); 
+            saveRules();
+        } else alert("Invalid or duplicate pupils");
+    }
+
+    function delFront(idx) { data.front_row.splice(idx, 1); renderAll(); saveRules(); }
+    function delBack(idx) { data.back_row.splice(idx, 1); renderAll(); saveRules(); }
+    function delApart(idx) { data.keep_apart.splice(idx, 1); renderAll(); saveRules(); }
 
     function saveRules() {
-        const front = document.getElementById('front-row').value.split(',').map(s=>s.trim()).filter(s=>s);
-        const back = document.getElementById('back-row').value.split(',').map(s=>s.trim()).filter(s=>s);
-        
-        const apartStr = document.getElementById('keep-apart').value;
-        const apart = apartStr.split(',').map(s => {
-            let p = s.split(':');
-            return p.length === 2 ? [p[0].trim(), p[1].trim()] : [];
-        }).filter(a => a.length === 2);
-
         fetch('/class/' + className + '/teacher', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                front_row: front,
-                back_row: back,
-                keep_apart: apart
-            })
+            body: JSON.stringify(data)
         }).then(res => res.json()).then(res => {
-            if(res.status==="success") alert("Saved!");
+            // Silently saved
         });
     }
+
+    renderAll();
 </script>
 {% endblock %}

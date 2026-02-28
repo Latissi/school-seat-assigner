@@ -46,6 +46,11 @@ def class_pupils(class_name):
     pupils = io.load_pupils(class_name)
     return render_template('pupils.html', class_name=class_name, pupils=pupils)
 
+@app.route('/class/<class_name>/preferences')
+def class_preferences(class_name):
+    pupils = io.load_pupils(class_name)
+    return render_template('preferences.html', class_name=class_name, pupils=pupils)
+
 @app.route('/class/<class_name>/teacher', methods=['GET', 'POST'])
 def class_teacher(class_name):
     if request.method == 'POST':

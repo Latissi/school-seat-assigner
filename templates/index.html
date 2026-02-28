@@ -3,25 +3,25 @@
 {% block title %}Dashboard - School Seat Assigner{% endblock %}
 
 {% block content %}
-<h1>Your Classes</h1>
+<h1><i class="fa-solid fa-school"></i> Your Classes</h1>
 
 <div class="flex two">
   <div>
     {% if classes %}
     <ul>
       {% for cls in classes %}
-      <li><a href="/class/{{ cls }}">{{ cls }}</a></li>
+      <li><a href="/class/{{ cls }}"><i class="fa-solid fa-chalkboard-user"></i> {{ cls }}</a></li>
       {% endfor %}
     </ul>
     {% else %}
-    <p>No classes yet. Create one.</p>
+    <p><i class="fa-solid fa-circle-exclamation"></i> No classes yet. Create one.</p>
     {% endif %}
   </div>
   <div>
     <form action="/class/create" method="POST" class="card" style="padding: 1em;">
-      <h3>Create New Class</h3>
+      <h3><i class="fa-solid fa-folder-plus"></i> Create New Class</h3>
       <input type="text" name="class_name" placeholder="Class Name (e.g., 5A)" required>
-      <button type="submit">Create</button>
+      <button type="submit"><i class="fa-solid fa-check"></i> Create</button>
     </form>
   </div>
 </div>

@@ -3,27 +3,27 @@
 {% block title %}{{ class_name }} Dashboard{% endblock %}
 
 {% block content %}
-<h1>Class: {{ class_name }}</h1>
+<h1><i class="fa-solid fa-chalkboard-user"></i> Class: {{ class_name }}</h1>
 <div class="flex two">
     <div class="card" style="padding: 1em;">
-        <h3>Seat Layout</h3>
+        <h3><i class="fa-solid fa-border-all"></i> Seat Layout</h3>
         <p>Define the physical arrangement of the classroom.</p>
-        <a href="/class/{{ class_name }}/layout" class="button">Edit Layout</a>
+        <a href="/class/{{ class_name }}/layout" class="button"><i class="fa-solid fa-pen-to-square"></i> Edit Layout</a>
     </div>
     <div class="card" style="padding: 1em;">
-        <h3>Pupils</h3>
+        <h3><i class="fa-solid fa-users"></i> Pupils</h3>
         <p>Manage the list of pupils and their seating preferences.</p>
-        <a href="/class/{{ class_name }}/pupils" class="button">Edit Pupils</a>
+        <a href="/class/{{ class_name }}/pupils" class="button"><i class="fa-solid fa-user-plus"></i> Edit Pupils</a>
     </div>
     <div class="card" style="padding: 1em;">
-        <h3>Teacher Constraints</h3>
+        <h3><i class="fa-solid fa-scale-balanced"></i> Teacher Constraints</h3>
         <p>Set strict rules (e.g. sit apart, sit in front row).</p>
-        <a href="/class/{{ class_name }}/teacher" class="button">Edit Rules</a>
+        <a href="/class/{{ class_name }}/teacher" class="button"><i class="fa-solid fa-list-check"></i> Edit Rules</a>
     </div>
     <div class="card" style="padding: 1em;">
-        <h3>Generate Assignment</h3>
+        <h3><i class="fa-solid fa-ranking-star"></i> Generate Assignment</h3>
         <p>Run the algorithm to place students in seats.</p>
-        <a href="/class/{{ class_name }}/assign" class="button success">Assign Seats</a>
+        <a href="/class/{{ class_name }}/assign" class="button success"><i class="fa-solid fa-wand-magic-sparkles"></i> Assign Seats</a>
     </div>
 </div>
 {% endblock %}

@@ -6,6 +6,8 @@
     <title>{% block title %}School Seat Assigner{% endblock %}</title>
     <!-- Simple CSS framework for quick styling -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/picnic">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { padding: 2em; max-width: 1200px; margin: 0 auto; }
         .nav { padding: 1em 0; margin-bottom: 2em; border-bottom: 1px solid #eee; }
@@ -16,13 +18,14 @@
 <body>
     <header>
         <div class="nav">
-            <a href="/">Home</a>
+            <a href="/"><i class="fa-solid fa-house"></i> Home</a>
             {% if class_name %}
-            &raquo; <a href="/class/{{ class_name }}">{{ class_name }}</a>
-            <a href="/class/{{ class_name }}/layout" class="button pseudo">Seat Layout</a>
-            <a href="/class/{{ class_name }}/pupils" class="button pseudo">Pupils & Preferences</a>
-            <a href="/class/{{ class_name }}/teacher" class="button pseudo">Teacher Rules</a>
-            <a href="/class/{{ class_name }}/assign" class="button pseudo">View Assignment</a>
+            &raquo; <a href="/class/{{ class_name }}"><strong>{{ class_name }}</strong></a>
+            <a href="/class/{{ class_name }}/layout" class="button pseudo"><i class="fa-solid fa-border-all"></i> Seat Layout</a>
+            <a href="/class/{{ class_name }}/pupils" class="button pseudo"><i class="fa-solid fa-users"></i> Pupils</a>
+            <a href="/class/{{ class_name }}/preferences" class="button pseudo"><i class="fa-solid fa-heart"></i> Prefs</a>
+            <a href="/class/{{ class_name }}/teacher" class="button pseudo"><i class="fa-solid fa-scale-balanced"></i> Rules</a>
+            <a href="/class/{{ class_name }}/assign" class="button pseudo"><i class="fa-solid fa-ranking-star"></i> Assignment</a>
             {% endif %}
         </div>
     </header>

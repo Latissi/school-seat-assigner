@@ -37,29 +37,98 @@
 }
 .grid-cell.front-tag { border-top: 5px solid #f44336; }
 .grid-cell.back-tag { border-bottom: 5px solid #4caf50; }
+.teacher-desk {
+    background: #4a5568;
+    color: white;
+    text-align: center;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+.layout-editor {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+}
+.layout-main {
+        flex: 1 1 auto;
+        min-width: 0;
+}
+.layout-tools {
+        flex: 0 0 320px;
+}
+
+.classroom-wrapper {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+.tool-option {
+    display: block;
+    margin-bottom: 0.5em;
+}
+.tool-option input[type="radio"] {
+    display: none;
+}
+.tool-option .btn-surface {
+    padding: 0.5em 1em;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #333;
+    display: block;
+}
+.tool-option input[type="radio"]:checked + .btn-surface {
+    border-color: #00acc1;
+    background: #e0f7fa;
+    color: #007c8a;
+    font-weight: bold;
+    box-shadow: 0 0 5px rgba(0, 172, 193, 0.4);
+}
+.tool-group-title {
+    font-size: 0.85em;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 0.5em;
+    margin-top: 1em;
+    letter-spacing: 0.5px;
+}
 </style>
+
 {% endblock %}
 
 {% block content %}
-<div class="flex two">
-  <div class="three-fourth">
-    <h2>Layout Editor: {{ class_name }}</h2>
-    <div id="grid-container"></div>
+<div class="layout-editor">
+    <div class="layout-main">
+    <h2><i class="fa-solid fa-border-all"></i> Layout Editor: {{ class_name }}</h2>
+    <div class="classroom-wrapper">
+      <div class="teacher-desk"><i class="fa-solid fa-person-chalkboard"></i> FRONT OF CLASSROOM / TEACHER DESK</div>
+      <div id="grid-container"></div>
+    </div>
   </div>
-  <div class="one-fourth">
+    <div class="layout-tools">
     <div class="card" style="padding: 1em;">
-      <h3>Grid Settings</h3>
+      <h3><i class="fa-solid fa-border-none"></i> Grid Settings</h3>
       <label>Rows: <input type="number" id="grid-rows" value="8" min="1"></label>
       <label>Cols: <input type="number" id="grid-cols" value="10" min="1"></label>
-      <button class="pseudo" onclick="initGrid()">Resize Grid / Refresh</button>
+      <button class="pseudo" onclick="initGrid()"><i class="fa-solid fa-arrows-rotate"></i> Resize Grid</button>
       <hr>
-      <h3>Paint Tool</h3>
-      <label><input type="radio" name="tool" value="toggle_seat" checked> Toggle Seat</label><br>
-      <label><input type="radio" name="tool" value="tag_front"> Mark Front Row</label><br>
-      <label><input type="radio" name="tool" value="tag_back"> Mark Back Row</label><br>
-      <label><input type="radio" name="tool" value="tag_middle"> Mark Middle (Default)</label><br>
+      <h3><i class="fa-solid fa-pen-ruler"></i> Edit Mode</h3>
+      <div class="tool-group-title" style="margin-top: 0;">Placement</div>
+      <label class="tool-option"><input type="radio" name="tool" value="toggle_seat" checked> <span class="btn-surface"><i class="fa-solid fa-plus-minus"></i> Add / Remove Seat</span></label>
+      
+      <div class="tool-group-title">Seat Tags</div>
+      <label class="tool-option"><input type="radio" name="tool" value="tag_front"> <span class="btn-surface"><i class="fa-solid fa-arrow-up"></i> Mark Front Row</span></label>
+      <label class="tool-option"><input type="radio" name="tool" value="tag_back"> <span class="btn-surface"><i class="fa-solid fa-arrow-down"></i> Mark Back Row</span></label>
+      <label class="tool-option"><input type="radio" name="tool" value="tag_middle"> <span class="btn-surface"><i class="fa-solid fa-left-right"></i> Mark Middle (Standard)</span></label>
       <hr>
-      <button class="success" onclick="saveLayout()">Save Layout</button>
+      <button class="success" onclick="saveLayout()"><i class="fa-solid fa-floppy-disk"></i> Save Layout</button>
     </div>
   </div>
 </div>
