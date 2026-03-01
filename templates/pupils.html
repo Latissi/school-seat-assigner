@@ -3,7 +3,7 @@
 {% block title %}Pupils - {{ class_name }}{% endblock %}
 
 {% block content %}
-<h2><i class="fa-solid fa-users"></i> Pupils: {{ class_name }}</h2>
+<h2><i class="fa-solid fa-users"></i> {{ t('pupils.heading', class_name=class_name) }}</h2>
 
 <div class="flex two">
     <div class="two-third">
@@ -11,10 +11,10 @@
             <table class="primary">
                 <thead>
                     <tr>
-                        <th><i class="fa-solid fa-user"></i> First Name</th>
-                        <th><i class="fa-solid fa-user"></i> Last Name</th>
-                        <th><i class="fa-solid fa-chart-line"></i> Performance <i class="fa-solid fa-circle-info" title="Lower performance means closer to the teacher"></i></th>
-                        <th><i class="fa-solid fa-wrench"></i> Action</th>
+                        <th><i class="fa-solid fa-user"></i> {{ t('pupils.col_first_name') }}</th>
+                        <th><i class="fa-solid fa-user"></i> {{ t('pupils.col_last_name') }}</th>
+                        <th><i class="fa-solid fa-chart-line"></i> {{ t('pupils.col_performance') }} <i class="fa-solid fa-circle-info" title="{{ t('pupils.performance_tooltip') }}"></i></th>
+                        <th><i class="fa-solid fa-wrench"></i> {{ t('common.col_action') }}</th>
                     </tr>
                 </thead>
                 <tbody id="pupil-table">
@@ -24,10 +24,10 @@
     </div>
     <div class="one-third">
         <div class="card" style="padding: 1em;">
-            <h3><i class="fa-solid fa-user-plus"></i> New Pupil</h3>
-            <input type="text" id="new-pupil-first" placeholder="First Name">
-            <input type="text" id="new-pupil-last" placeholder="Last Name" style="margin-top: 10px;">
-            <button onclick="addPupil()" style="margin-top: 10px;"><i class="fa-solid fa-plus"></i> Add</button>
+            <h3><i class="fa-solid fa-user-plus"></i> {{ t('pupils.new_pupil') }}</h3>
+            <input type="text" id="new-pupil-first" placeholder="{{ t('pupils.first_name_placeholder') }}">
+            <input type="text" id="new-pupil-last" placeholder="{{ t('pupils.last_name_placeholder') }}" style="margin-top: 10px;">
+            <button onclick="addPupil()" style="margin-top: 10px;"><i class="fa-solid fa-plus"></i> {{ t('common.add') }}</button>
             
         </div>
     </div>
@@ -63,7 +63,7 @@
         tbody.innerHTML = '';
         
         if (data.pupils.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#666;">No pupils added yet.</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#666;">${t('pupils.no_pupils')}</td></tr>`;
             return;
         }
 
@@ -90,7 +90,7 @@
             tr.appendChild(tdPerf);
             
             let tdAction = document.createElement('td');
-            tdAction.innerHTML = `<button class="error" onclick="confirmDelete(this, () => deletePupil(${index}))" style="padding: 0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> Delete</button>`;
+            tdAction.innerHTML = `<button class="error" onclick="confirmDelete(this, () => deletePupil(${index}))" style="padding: 0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> ${t('common.delete')}</button>`;
             tr.appendChild(tdAction);
             
             tbody.appendChild(tr);
@@ -108,7 +108,7 @@
         const lastName = inputLast.value.trim();
         
         if (!firstName && !lastName) {
-            showToast('Please enter at least a first name', 'error');
+            showToast(t('pupils.toast_enter_name'), 'error');
             inputFirst.focus();
             return;
         }
@@ -149,11 +149,11 @@
             return res.json();
         })
         .then(res => {
-            showToast('Pupils saved successfully');
+            showToast(t('pupils.toast_saved'));
         })
         .catch(err => {
             console.error(err);
-            showToast('Error saving pupils', 'error');
+            showToast(t('pupils.toast_save_error'), 'error');
         });
     }
 

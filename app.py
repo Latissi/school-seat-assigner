@@ -1,13 +1,32 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'school-seat-assigner-dev-key')
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
 # Ensure data directory exists
 os.makedirs(DATA_DIR, exist_ok=True)
 
-from engine import io
+from engine import io, i18n
+
+@app.context_processor
+def inject_i18n():
+    lang = session.get('lang', 'en')
+    def translate(key, **ctx):
+        return i18n.t(key, lang, **ctx)
+    return dict(
+        t=translate,
+        current_lang=lang,
+        available_langs=i18n.SUPPORTED_LANGS,
+        i18n_catalog=i18n.catalog(lang)
+    )
+
+@app.route('/lang/<lang>')
+def set_lang(lang):
+    if lang in i18n.SUPPORTED_LANGS:
+        session['lang'] = lang
+    return redirect(request.referrer or url_for('index'))
 
 @app.route('/')
 def index():
@@ -61,6 +80,15 @@ def class_teacher(class_name):
     pupils = io.load_pupils(class_name)
     return render_template('teacher.html', class_name=class_name, constraints=constraints, pupils=pupils)
 
+@app.route('/class/<class_name>/config', methods=['GET', 'POST'])
+def class_config(class_name):
+    if request.method == 'POST':
+        data = request.json
+        io.save_config(class_name, data)
+        return jsonify({"status": "success"})
+    config = io.load_config(class_name)
+    return render_template('config.html', class_name=class_name, config=config)
+
 @app.route('/class/<class_name>/assign', methods=['GET', 'POST'])
 def class_assign(class_name):
     from engine import solver
@@ -75,7 +103,8 @@ def class_assign(class_name):
     layout = io.load_layout(class_name)
     pupils = io.load_pupils(class_name)
     teacher = io.load_teacher_constraints(class_name)
-    return render_template('result.html', class_name=class_name, assignment=assignment, layout=layout, pupils=pupils, teacher=teacher)
+    config = io.load_config(class_name)
+    return render_template('result.html', class_name=class_name, assignment=assignment, layout=layout, pupils=pupils, teacher=teacher, config=config)
 
 @app.route('/class/<class_name>/assign/update', methods=['POST'])
 def class_assign_update(class_name):

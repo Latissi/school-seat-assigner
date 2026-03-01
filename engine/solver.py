@@ -7,13 +7,15 @@ def assign_seats(class_name: str) -> Dict[str, Any]:
     layout_data = io.load_layout(class_name)
     pupils_data = io.load_pupils(class_name)
     teacher_data = io.load_teacher_constraints(class_name)
+    config_data = io.load_config(class_name)
     
-    return _assign_seats_ortools(layout_data, pupils_data, teacher_data)
+    return _assign_seats_ortools(layout_data, pupils_data, teacher_data, config_data)
 
 def evaluate_mapping(class_name: str, mapping: Dict[str, str]) -> Dict[str, Any]:
     layout_data = io.load_layout(class_name)
     pupils_data = io.load_pupils(class_name)
     teacher_data = io.load_teacher_constraints(class_name)
+    config_data = io.load_config(class_name)
     
     pupils_map, pupil_ids, seats, seat_distances, layout_seats = _prepare_data(layout_data, pupils_data, teacher_data)
     
@@ -24,6 +26,11 @@ def evaluate_mapping(class_name: str, mapping: Dict[str, str]) -> Dict[str, Any]
     
     score = 0
     
+    w_keep_apart      = config_data.get('weight_keep_apart', 100)
+    w_compat_pairs    = config_data.get('weight_compatible_pairs', 200)
+    w_sit_next_to     = config_data.get('weight_sit_next_to', 30)
+    w_avoid           = config_data.get('weight_avoid', -30)
+
     def is_adj(p1, p2):
         if p1 not in p_to_s or p2 not in p_to_s:
             return False
@@ -41,22 +48,22 @@ def evaluate_mapping(class_name: str, mapping: Dict[str, str]) -> Dict[str, Any]
             r1, c1 = seat_coords[s1]
             r2, c2 = seat_coords[s2]
             dist = abs(r1 - r2) + abs(c1 - c2)
-            score += dist * 100
+            score += dist * w_keep_apart
 
     # Compatible Pairs
     for p1, p2 in teacher_data.get('compatible_pairs', []):
         if is_adj(p1, p2):
-            score += 200
+            score += w_compat_pairs
 
     # Pupil Preferences
     for p in pupil_ids:
         if p in pupils_map:
             for nxt in pupils_map[p].get('sit_next_to', []):
                 if is_adj(p, nxt):
-                    score += 30
+                    score += w_sit_next_to
             for avd in pupils_map[p].get('avoid', []):
                 if is_adj(p, avd):
-                    score -= 30
+                    score += w_avoid
 
     # Performance
     max_dist = max(seat_distances.values()) if seat_distances else 1.0
@@ -120,16 +127,23 @@ def _prepare_data(layout_data, pupils_data, teacher_data):
     return pupils, pupil_ids, seats, seat_distances, layout_seats
 
 
-def _assign_seats_ortools(layout_data, pupils_data, teacher_data) -> Dict[str, Any]:
+def _assign_seats_ortools(layout_data, pupils_data, teacher_data, config_data=None) -> Dict[str, Any]:
     try:
         from ortools.sat.python import cp_model
     except ImportError:
-        return {"error": "OR-Tools is not installed on the server."}
+        return {"error": "E_NO_ORTOOLS"}
         
+    if config_data is None:
+        config_data = {}
+    w_keep_apart   = config_data.get('weight_keep_apart', 100)
+    w_compat_pairs = config_data.get('weight_compatible_pairs', 200)
+    w_sit_next_to  = config_data.get('weight_sit_next_to', 30)
+    w_avoid        = config_data.get('weight_avoid', -30)
+
     pupils_map, pupil_ids, seats, seat_distances, layout_seats = _prepare_data(layout_data, pupils_data, teacher_data)
     
     if len(pupil_ids) > len(seats):
-        return {"error": "More pupils than available seats!"}
+        return {"error": "E_MORE_PUPILS"}
         
     if len(pupil_ids) == 0:
         return {"mapping": {}, "score": 0}
@@ -231,19 +245,19 @@ def _assign_seats_ortools(layout_data, pupils_data, teacher_data) -> Dict[str, A
         model.Add(dist_var == R_abs + C_abs)
         
         # Maximize the exact distance directly
-        objective_terms.append(dist_var * 100)
+        objective_terms.append(dist_var * w_keep_apart)
         ka_idx += 1
         
     # Compatible Pairs
     for p1, p2 in teacher_data.get('compatible_pairs', []):
-        add_adjacency_reward(p1, p2, 200, 'comp')
+        add_adjacency_reward(p1, p2, w_compat_pairs, 'comp')
         
     # Pupil Preferences
     for p in pupil_ids:
         for nxt in pupils_map[p].get('sit_next_to', []):
-            add_adjacency_reward(p, nxt, 30, 'like')
+            add_adjacency_reward(p, nxt, w_sit_next_to, 'like')
         for avd in pupils_map[p].get('avoid', []):
-            add_adjacency_reward(p, avd, -30, 'dislike')
+            add_adjacency_reward(p, avd, w_avoid, 'dislike')
             
     # Performance-based Distance Calculation
     # Centered scale: performance 3 is neutral, 1-2 prefer close, 4-5 prefer far.
@@ -279,4 +293,4 @@ def _assign_seats_ortools(layout_data, pupils_data, teacher_data) -> Dict[str, A
                     
         return {"mapping": mapping, "score": int(solver.ObjectiveValue())}
     else:
-        return {"error": "Could not find a feasible solution in the time limit."}
+        return {"error": "E_NO_FEASIBLE"}

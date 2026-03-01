@@ -3,52 +3,57 @@
 {% block title %}Teacher Rules - {{ class_name }}{% endblock %}
 
 {% block content %}
-<h2><i class="fa-solid fa-scale-balanced"></i> Teacher Rules: {{ class_name }}</h2>
-
-{% macro pupil_options() %}
-    <option value="" disabled selected>Select Pupil...</option>
-    {% for p in pupils.pupils %}
-    <option value="{{ p.id }}">{{ (p.first_name|default('') ~ ' ' ~ p.last_name|default(p.name|default('')))|trim }}</option>
-    {% endfor %}
-{% endmacro %}
+<h2><i class="fa-solid fa-scale-balanced"></i> {{ t('teacher.heading', class_name=class_name) }}</h2>
 
 <div class="flex two">
     <div class="half">
         <div class="card" style="padding: 1em;">
-            <h3><i class="fa-solid fa-user-friends"></i> Compatible Learning Pairs</h3>
-            <p style="font-size: 0.9em; color: #666;">These pupils will be seated close to each other.</p>
+            <h3><i class="fa-solid fa-user-friends"></i> {{ t('teacher.compat_pairs') }}</h3>
+            <p style="font-size: 0.9em; color: #666;">{{ t('teacher.compat_pairs_desc') }}</p>
             <table class="primary">
-                <thead><tr><th>A</th><th>B</th><th>Action</th></tr></thead>
+                <thead><tr><th>A</th><th>B</th><th>{{ t('common.col_action') }}</th></tr></thead>
                 <tbody id="pairs-table"></tbody>
             </table>
             <div style="display: flex; gap: 10px; margin-top: 10px;">
                 <select id="add-pair-a">
-                    {{ pupil_options() }}
+                    <option value="" disabled selected>{{ t('common.select_pupil') }}</option>
+                    {% for p in pupils.pupils %}
+                    <option value="{{ p.id }}">{{ (p.first_name|default('') ~ ' ' ~ p.last_name|default(p.name|default('')))|trim }}</option>
+                    {% endfor %}
                 </select>
                 <select id="add-pair-b">
-                    {{ pupil_options() }}
+                    <option value="" disabled selected>{{ t('common.select_pupil') }}</option>
+                    {% for p in pupils.pupils %}
+                    <option value="{{ p.id }}">{{ (p.first_name|default('') ~ ' ' ~ p.last_name|default(p.name|default('')))|trim }}</option>
+                    {% endfor %}
                 </select>
-                <button onclick="addPair()"><i class="fa-solid fa-plus"></i> Add Pair</button>
+                <button onclick="addPair()"><i class="fa-solid fa-plus"></i> {{ t('teacher.add_pair') }}</button>
             </div>
         </div>
     </div>
     
     <div class="half">
         <div class="card" style="padding: 1em;">
-            <h3><i class="fa-solid fa-people-arrows"></i> Keep Apart</h3>
-            <p style="font-size: 0.9em; color: #666;">These pupils will be seated as far apart as possible.</p>
+            <h3><i class="fa-solid fa-people-arrows"></i> {{ t('teacher.keep_apart') }}</h3>
+            <p style="font-size: 0.9em; color: #666;">{{ t('teacher.keep_apart_desc') }}</p>
             <table class="primary">
-                <thead><tr><th>A</th><th>B</th><th>Action</th></tr></thead>
+                <thead><tr><th>A</th><th>B</th><th>{{ t('common.col_action') }}</th></tr></thead>
                 <tbody id="apart-table"></tbody>
             </table>
             <div style="display: flex; gap: 10px; margin-top: 10px;">
                 <select id="add-apart-a">
-                    {{ pupil_options() }}
+                    <option value="" disabled selected>{{ t('common.select_pupil') }}</option>
+                    {% for p in pupils.pupils %}
+                    <option value="{{ p.id }}">{{ (p.first_name|default('') ~ ' ' ~ p.last_name|default(p.name|default('')))|trim }}</option>
+                    {% endfor %}
                 </select>
                 <select id="add-apart-b">
-                    {{ pupil_options() }}
+                    <option value="" disabled selected>{{ t('common.select_pupil') }}</option>
+                    {% for p in pupils.pupils %}
+                    <option value="{{ p.id }}">{{ (p.first_name|default('') ~ ' ' ~ p.last_name|default(p.name|default('')))|trim }}</option>
+                    {% endfor %}
                 </select>
-                <button onclick="addApart()"><i class="fa-solid fa-plus"></i> Add Rule</button>
+                <button onclick="addApart()"><i class="fa-solid fa-plus"></i> {{ t('teacher.add_rule') }}</button>
             </div>
         </div>
     </div>
@@ -74,11 +79,11 @@
         const pairsT = document.getElementById('pairs-table');
         pairsT.innerHTML = '';
         if (data.compatible_pairs.length === 0) {
-            pairsT.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#666;">No compatible learning pairs.</td></tr>';
+            pairsT.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#666;">${t('teacher.no_pairs')}</td></tr>`;
         } else {
             data.compatible_pairs.forEach((pair, idx) => {
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td>${getPupilName(pair[0])}</td><td>${getPupilName(pair[1])}</td><td><button class="error" onclick="confirmDelete(this, () => delPair(${idx}))" style="padding:0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> Delete</button></td>`;
+                tr.innerHTML = `<td>${getPupilName(pair[0])}</td><td>${getPupilName(pair[1])}</td><td><button class="error" onclick="confirmDelete(this, () => delPair(${idx}))" style="padding:0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> ${t('common.delete')}</button></td>`;
                 pairsT.appendChild(tr);
             });
         }
@@ -87,11 +92,11 @@
         const apartT = document.getElementById('apart-table');
         apartT.innerHTML = '';
         if (data.keep_apart.length === 0) {
-            apartT.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#666;">No keep-apart rules.</td></tr>';
+            apartT.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#666;">${t('teacher.no_apart')}</td></tr>`;
         } else {
             data.keep_apart.forEach((pair, idx) => {
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td>${getPupilName(pair[0])}</td><td>${getPupilName(pair[1])}</td><td><button class="error" onclick="confirmDelete(this, () => delApart(${idx}))" style="padding:0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> Delete</button></td>`;
+                tr.innerHTML = `<td>${getPupilName(pair[0])}</td><td>${getPupilName(pair[1])}</td><td><button class="error" onclick="confirmDelete(this, () => delApart(${idx}))" style="padding:0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> ${t('common.delete')}</button></td>`;
                 apartT.appendChild(tr);
             });
         }
@@ -101,11 +106,11 @@
         let idA = document.getElementById('add-pair-a').value;
         let idB = document.getElementById('add-pair-b').value;
         if (!idA || !idB) {
-            showToast('Please select both pupils', 'error');
+            showToast(t('teacher.toast_select_pupils'), 'error');
             return;
         }
         if (idA === idB) {
-            showToast('Cannot pair a pupil with themselves', 'error');
+            showToast(t('teacher.toast_self_pair'), 'error');
             return;
         }
         let exists = data.compatible_pairs.some(p => (p[0] === idA && p[1] === idB) || (p[0] === idB && p[1] === idA));
@@ -113,7 +118,7 @@
             data.compatible_pairs.push([idA, idB]);
             saveRules();
         } else {
-            showToast('This learning pair already exists', 'error');
+            showToast(t('teacher.toast_pair_exists'), 'error');
         }
         document.getElementById('add-pair-a').value = '';
         document.getElementById('add-pair-b').value = '';
@@ -124,11 +129,11 @@
         let idA = document.getElementById('add-apart-a').value;
         let idB = document.getElementById('add-apart-b').value;
         if (!idA || !idB) {
-            showToast('Please select both pupils', 'error');
+            showToast(t('teacher.toast_select_pupils'), 'error');
             return;
         }
         if (idA === idB) {
-            showToast('Cannot keep a pupil apart from themselves', 'error');
+            showToast(t('teacher.toast_apart_self'), 'error');
             return;
         }
         let exists = data.keep_apart.some(p => (p[0] === idA && p[1] === idB) || (p[0] === idB && p[1] === idA));
@@ -136,7 +141,7 @@
             data.keep_apart.push([idA, idB]);
             saveRules();
         } else {
-            showToast('This keep-apart rule already exists', 'error');
+            showToast(t('teacher.toast_apart_exists'), 'error');
         }
         document.getElementById('add-apart-a').value = '';
         document.getElementById('add-apart-b').value = '';
@@ -165,10 +170,10 @@
             if(!res.ok) throw new Error("Failed to save");
             return res.json();
         })
-        .then(res => showToast("Teacher rules saved successfully"))
+        .then(res => showToast(t('teacher.toast_saved')))
         .catch(err => {
             console.error(err);
-            showToast("Error saving rules", "error");
+            showToast(t('teacher.toast_error'), "error");
         });
     }
 

@@ -52,3 +52,23 @@ def load_assignment(class_name):
 def save_assignment(class_name, doc):
     class_dir = get_class_dir(class_name)
     _save_json(os.path.join(class_dir, 'assignment.json'), doc)
+
+CONFIG_DEFAULTS = {
+    "weight_keep_apart": 100,
+    "weight_compatible_pairs": 200,
+    "weight_sit_next_to": 30,
+    "weight_avoid": -30,
+}
+
+def load_config(class_name):
+    class_dir = get_class_dir(class_name)
+    stored = _load_json(os.path.join(class_dir, 'config.json'), default={})
+    # Merge with defaults so new keys always have a safe fallback value
+    return {**CONFIG_DEFAULTS, **stored}
+
+def save_config(class_name, doc):
+    class_dir = get_class_dir(class_name)
+    if not isinstance(doc, dict):
+        doc = {}
+    canonical = {k: doc.get(k, CONFIG_DEFAULTS[k]) for k in CONFIG_DEFAULTS}
+    _save_json(os.path.join(class_dir, 'config.json'), canonical)

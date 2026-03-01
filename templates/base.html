@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ current_lang }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,6 +23,14 @@
 <body>
     <div id="toast-container"></div>
     <script>
+        /* ── i18n ─────────────────────────────────────────── */
+        window.I18N = {{ i18n_catalog | tojson | safe }};
+        function t(key, vars) {
+            let s = window.I18N[key] !== undefined ? window.I18N[key] : key;
+            if (vars) s = s.replace(/{(\w+)}/g, (_, k) => vars[k] !== undefined ? vars[k] : _);
+            return s;
+        }
+        /* ── toast ───────────────────────────────────────── */
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -67,14 +75,14 @@
             }
 
             btn.dataset.confirming = '1';
-            btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Sure?';
+            btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> ' + t('confirm.sure');
             btn.className = 'error';
             btn._confirmTimer = setTimeout(revert, 3000);
 
             const cancel = document.createElement('button');
             cancel.className = 'pseudo';
             cancel.style.marginLeft = '4px';
-            cancel.innerHTML = 'Cancel';
+            cancel.innerHTML = t('confirm.cancel');
             cancel.onclick = (e) => { e.stopPropagation(); revert(); };
             btn._cancelBtn = cancel;
             btn.insertAdjacentElement('afterend', cancel);
@@ -84,15 +92,27 @@
     </script>
     <header>
         <div class="nav">
-            <a href="/"><i class="fa-solid fa-house"></i> Home</a>
+            <a href="/"><i class="fa-solid fa-house"></i> {{ t('nav.home') }}</a>
             {% if class_name %}
             &raquo; <a href="/class/{{ class_name }}"><strong>{{ class_name }}</strong></a>
-            <a href="/class/{{ class_name }}/layout" class="button pseudo"><i class="fa-solid fa-border-all"></i> Seat Layout</a>
-            <a href="/class/{{ class_name }}/pupils" class="button pseudo"><i class="fa-solid fa-users"></i> Pupils</a>
-            <a href="/class/{{ class_name }}/preferences" class="button pseudo"><i class="fa-solid fa-heart"></i> Preferences</a>
-            <a href="/class/{{ class_name }}/teacher" class="button pseudo"><i class="fa-solid fa-scale-balanced"></i> Teacher Rules</a>
-            <a href="/class/{{ class_name }}/assign" class="button pseudo"><i class="fa-solid fa-ranking-star"></i> Assignment</a>
+            <a href="/class/{{ class_name }}/layout" class="button pseudo"><i class="fa-solid fa-border-all"></i> {{ t('nav.seat_layout') }}</a>
+            <a href="/class/{{ class_name }}/pupils" class="button pseudo"><i class="fa-solid fa-users"></i> {{ t('nav.pupils') }}</a>
+            <a href="/class/{{ class_name }}/preferences" class="button pseudo"><i class="fa-solid fa-heart"></i> {{ t('nav.preferences') }}</a>
+            <a href="/class/{{ class_name }}/teacher" class="button pseudo"><i class="fa-solid fa-scale-balanced"></i> {{ t('nav.teacher_rules') }}</a>
+            <a href="/class/{{ class_name }}/assign" class="button pseudo"><i class="fa-solid fa-ranking-star"></i> {{ t('nav.assignment') }}</a>
             {% endif %}
+            <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 0.4em;">
+            {% if class_name %}
+                <a href="/class/{{ class_name }}/config" title="{{ t('nav.configuration') }}" style="color: #aaa; font-size: 0.85em; line-height: 1; padding: 0.2em 0.3em; text-decoration: none; border-radius: 3px;" onmouseover="this.style.color='#555'" onmouseout="this.style.color='#aaa'"><i class="fa-solid fa-sliders"></i></a>
+                <span style="color: #ddd;">|</span>
+            {% endif %}
+                <i class="fa-solid fa-earth-europe" style="margin-right: 0.35em; color: #555; font-size: 0.9em;"></i>
+                <select onchange="window.location='/lang/'+this.value" style="font-size: 0.85em; padding: 0.2em 0.4em; border: 1px solid #ccc; border-radius: 4px; background: #fff; cursor: pointer;">
+                {% for lang in available_langs %}
+                    <option value="{{ lang }}" {{ 'selected' if current_lang == lang else '' }}>{{ t('lang.' + lang) }}</option>
+                {% endfor %}
+                </select>
+            </span>
         </div>
     </header>
     <main>

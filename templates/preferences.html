@@ -3,7 +3,7 @@
 {% block title %}Preferences - {{ class_name }}{% endblock %}
 
 {% block content %}
-<h2><i class="fa-solid fa-heart"></i> Pupil Preferences: {{ class_name }}</h2>
+<h2><i class="fa-solid fa-heart"></i> {{ t('prefs.heading', class_name=class_name) }}</h2>
 
 <div class="flex two">
     <div class="two-third">
@@ -11,10 +11,10 @@
             <table class="primary">
                 <thead>
                     <tr>
-                        <th>Pupil A</th>
-                        <th>Preference</th>
-                        <th>Pupil B</th>
-                        <th><i class="fa-solid fa-wrench"></i> Action</th>
+                        <th>{{ t('prefs.col_pupil_a') }}</th>
+                        <th>{{ t('prefs.col_preference') }}</th>
+                        <th>{{ t('prefs.col_pupil_b') }}</th>
+                        <th><i class="fa-solid fa-wrench"></i> {{ t('common.col_action') }}</th>
                     </tr>
                 </thead>
                 <tbody id="prefs-table">
@@ -24,31 +24,31 @@
     </div>
     <div class="one-third">
         <div class="card" style="padding: 1em;">
-            <h3><i class="fa-solid fa-handshake"></i> New Preference Rule</h3>
+            <h3><i class="fa-solid fa-handshake"></i> {{ t('prefs.new_rule') }}</h3>
             {% macro pupil_options() %}
-                <option value="" disabled selected>Select Pupil...</option>
+                <option value="" disabled selected>{{ t('common.select_pupil') }}</option>
                 {% for p in pupils.pupils %}
                 <option value="{{ p.id }}">{{ (p.first_name|default('') ~ ' ' ~ p.last_name|default(p.name|default('')))|trim }}</option>
                 {% endfor %}
             {% endmacro %}
 
-            <label>Pupil A</label>
+            <label>{{ t('prefs.pupil_a') }}</label>
             <select id="pref-source">
                 {{ pupil_options() }}
             </select>
             
-            <label style="margin-top: 10px;">Preference</label>
+            <label style="margin-top: 10px;">{{ t('prefs.preference') }}</label>
             <select id="pref-type">
-                <option value="like">Likes (Sit Next To)</option>
-                <option value="dislike">Dislikes (Avoid)</option>
+                <option value="like">{{ t('prefs.likes') }}</option>
+                <option value="dislike">{{ t('prefs.dislikes') }}</option>
             </select>
 
-            <label style="margin-top: 10px;">Pupil B</label>
+            <label style="margin-top: 10px;">{{ t('prefs.pupil_b') }}</label>
             <select id="pref-target">
                 {{ pupil_options() }}
             </select>
             
-            <button onclick="addPref()" style="margin-top: 15px;"><i class="fa-solid fa-plus"></i> Add Rule</button>
+            <button onclick="addPref()" style="margin-top: 15px;"><i class="fa-solid fa-plus"></i> {{ t('prefs.add_rule') }}</button>
             
         </div>
     </div>
@@ -82,7 +82,7 @@
         tbody.innerHTML = '';
         
         if (prefsList.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#666;">No preferences added yet.</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#666;">${t('prefs.no_prefs')}</td></tr>`;
             return;
         }
 
@@ -95,9 +95,9 @@
             
             let tdType = document.createElement('td');
             if (pref.type === 'like') {
-                tdType.innerHTML = `<span class="label success"><i class="fa-solid fa-thumbs-up"></i> Likes</span>`;
+                tdType.innerHTML = `<span class="label success"><i class="fa-solid fa-thumbs-up"></i> ${t('prefs.likes_label')}</span>`;
             } else {
-                tdType.innerHTML = `<span class="label error"><i class="fa-solid fa-thumbs-down"></i> Dislikes</span>`;
+                tdType.innerHTML = `<span class="label error"><i class="fa-solid fa-thumbs-down"></i> ${t('prefs.dislikes_label')}</span>`;
             }
             tr.appendChild(tdType);
             
@@ -106,7 +106,7 @@
             tr.appendChild(tdPB);
 
             let tdAction = document.createElement('td');
-            tdAction.innerHTML = `<button class="error" onclick="confirmDelete(this, () => deletePref(${index}))" style="padding: 0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> Delete</button>`;
+            tdAction.innerHTML = `<button class="error" onclick="confirmDelete(this, () => deletePref(${index}))" style="padding: 0.2rem 0.5rem;"><i class="fa-solid fa-trash-can"></i> ${t('common.delete')}</button>`;
             tr.appendChild(tdAction);
             
             tbody.appendChild(tr);
@@ -119,15 +119,15 @@
         const type = document.getElementById('pref-type').value;
 
         if(!sourceId) {
-            showToast("Please select Pupil A", "error");
+            showToast(t('prefs.toast_select_a'), "error");
             return;
         }
         if(!targetId) {
-            showToast("Please select Pupil B", "error");
+            showToast(t('prefs.toast_select_b'), "error");
             return;
         }
         if(sourceId === targetId) {
-            showToast("A pupil cannot have a preference for themselves", "error");
+            showToast(t('prefs.toast_self'), "error");
             return;
         }
 
@@ -137,7 +137,7 @@
             prefsList.push({ source: sourceId, type: type, target: targetId });
             savePrefs();
         } else {
-            showToast('This preference rule already exists', 'error');
+            showToast(t('prefs.toast_exists'), 'error');
         }
         
         document.getElementById('pref-source').value = '';
@@ -177,10 +177,10 @@
             if(!res.ok) throw new Error("Failed to save");
             return res.json();
         })
-        .then(res => showToast("Preferences saved successfully"))
+        .then(res => showToast(t('prefs.toast_saved')))
         .catch(err => {
             console.error(err);
-            showToast("Error saving preferences", "error");
+            showToast(t('prefs.toast_error'), "error");
         });
     }
 

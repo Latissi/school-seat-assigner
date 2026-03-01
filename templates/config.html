@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t('config.heading', class_name=class_name) }}{% endblock %}
+
+{% block content %}
+<h2><i class="fa-solid fa-sliders"></i> {{ t('config.heading', class_name=class_name) }}</h2>
+<p style="color: #555; font-size: 0.95em;">
+    {{ t('config.intro') }}
+</p>
+
+<div class="flex two">
+    <div class="half">
+        <div class="card" style="padding: 1.5em;">
+            <h3><i class="fa-solid fa-chalkboard-user"></i> {{ t('config.teacher_weights') }}</h3>
+            <p style="font-size: 0.9em; color: #666;">{{ t('config.teacher_weights_desc') }}</p>
+            <table class="primary" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>{{ t('config.col_constraint') }}</th>
+                        <th style="width: 140px;">{{ t('config.col_weight') }}</th>
+                        <th>{{ t('config.col_description') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><i class="fa-solid fa-people-arrows" style="color: #e53935;"></i> {{ t('teacher.keep_apart') }}</td>
+                        <td>
+                            <input type="number" id="weight_keep_apart" value="{{ config.weight_keep_apart }}"
+                                   min="0" max="10000" step="10"
+                                   style="width: 110px;"
+                                   onchange="saveConfig()">
+                        </td>
+                        <td style="font-size: 0.85em; color: #555;">{{ t('config.keep_apart_desc') }}</td>
+                    </tr>
+                    <tr>
+                        <td><i class="fa-solid fa-user-friends" style="color: #1565c0;"></i> {{ t('teacher.compat_pairs') }}</td>
+                        <td>
+                            <input type="number" id="weight_compatible_pairs" value="{{ config.weight_compatible_pairs }}"
+                                   min="0" max="10000" step="10"
+                                   style="width: 110px;"
+                                   onchange="saveConfig()">
+                        </td>
+                        <td style="font-size: 0.85em; color: #555;">{{ t('config.compat_pairs_desc') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="half">
+        <div class="card" style="padding: 1.5em;">
+            <h3><i class="fa-solid fa-heart"></i> {{ t('config.pupil_weights') }}</h3>
+            <p style="font-size: 0.9em; color: #666;">{{ t('config.pupil_weights_desc') }}</p>
+            <table class="primary" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>{{ t('config.col_constraint') }}</th>
+                        <th style="width: 140px;">{{ t('config.col_weight') }}</th>
+                        <th>{{ t('config.col_description') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><i class="fa-solid fa-handshake" style="color: #2e7d32;"></i> {{ t('config.sit_next_to') }}</td>
+                        <td>
+                            <input type="number" id="weight_sit_next_to" value="{{ config.weight_sit_next_to }}"
+                                   min="0" max="10000" step="5"
+                                   style="width: 110px;"
+                                   onchange="saveConfig()">
+                        </td>
+                        <td style="font-size: 0.85em; color: #555;">{{ t('config.sit_next_to_desc') }}</td>
+                    </tr>
+                    <tr>
+                        <td><i class="fa-solid fa-ban" style="color: #e65100;"></i> {{ t('config.avoid') }}</td>
+                        <td>
+                            <input type="number" id="weight_avoid" value="{{ config.weight_avoid }}"
+                                   min="-10000" max="0" step="5"
+                                   style="width: 110px;"
+                                   onchange="saveConfig()">
+                        </td>
+                        <td style="font-size: 0.85em; color: #555;">{{ t('config.avoid_desc') }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card" style="padding: 1.5em; margin-top: 1em;">
+    <h3><i class="fa-solid fa-circle-info"></i> {{ t('config.how_weights') }}</h3>
+    <div class="flex two" style="gap: 1em; margin-top: 0.5em;">
+        <div>
+            <p style="font-size: 0.9em; color: #444; margin: 0;">{{ t('config.how_weights_1') }}</p>
+        </div>
+        <div>
+            <p style="font-size: 0.9em; color: #444; margin: 0;">{{ t('config.how_weights_2') | safe }}</p>
+        </div>
+    </div>
+    <div style="margin-top: 1em; background: #fff8e1; padding: 0.75em; border-radius: 4px; border: 1px solid #ffe082; font-size: 0.88em; color: #5d4037;">
+        <i class="fa-solid fa-triangle-exclamation" style="color: #f9a825;"></i>
+        {{ t('config.warning') | safe }}
+    </div>
+</div>
+
+<script>
+    const className = "{{ class_name }}";
+
+    function saveConfig() {
+        const data = {
+            weight_keep_apart:      parseInt(document.getElementById('weight_keep_apart').value, 10),
+            weight_compatible_pairs: parseInt(document.getElementById('weight_compatible_pairs').value, 10),
+            weight_sit_next_to:     parseInt(document.getElementById('weight_sit_next_to').value, 10),
+            weight_avoid:           parseInt(document.getElementById('weight_avoid').value, 10),
+        };
+
+        // Guard: avoid NaN values reaching the server
+        for (const [key, val] of Object.entries(data)) {
+            if (isNaN(val)) {
+                showToast(t('config.invalid_value_for') + ' ' + key.replace(/_/g, ' '), 'error');
+                return;
+            }
+        }
+
+        fetch('/class/' + className + '/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+        .then(res => {
+            if (!res.ok) throw new Error('Failed to save');
+            return res.json();
+        })
+        .then(() => showToast(t('config.toast_saved')))
+        .catch(err => {
+            console.error(err);
+            showToast(t('config.toast_error'), 'error');
+        });
+    }
+</script>
+{% endblock %}

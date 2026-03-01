@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - School Seat Assigner{% endblock %}
+{% block title %}{{ t('index.page_title') }}{% endblock %}
 
 {% block content %}
-<h1><i class="fa-solid fa-school"></i> Your Classes</h1>
+<h1><i class="fa-solid fa-school"></i> {{ t('index.heading') }}</h1>
 
 <div class="flex two">
   <div>
@@ -14,14 +14,14 @@
       {% endfor %}
     </ul>
     {% else %}
-    <p><i class="fa-solid fa-circle-exclamation"></i> No classes yet. Create one.</p>
+    <p><i class="fa-solid fa-circle-exclamation"></i> {{ t('index.no_classes') }}</p>
     {% endif %}
   </div>
   <div>
     <form action="/class/create" method="POST" class="card" style="padding: 1em;">
-      <h3><i class="fa-solid fa-folder-plus"></i> Create New Class</h3>
-      <input type="text" name="class_name" placeholder="Class Name (e.g., 5A)" required>
-      <button type="submit"><i class="fa-solid fa-check"></i> Create</button>
+      <h3><i class="fa-solid fa-folder-plus"></i> {{ t('index.create_heading') }}</h3>
+      <input type="text" name="class_name" placeholder="{{ t('index.class_name_placeholder') }}" required>
+      <button type="submit"><i class="fa-solid fa-check"></i> {{ t('index.create_btn') }}</button>
     </form>
   </div>
 </div>
