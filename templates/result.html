@@ -34,6 +34,14 @@
     background: #c8e6c9;
     border-color: #388e3c;
 }
+.grid-cell.assigned-female {
+    background: #fce4ec;
+    border-color: #e91e63;
+}
+.grid-cell.assigned-male {
+    background: #e3f2fd;
+    border-color: #1565c0;
+}
 .teacher-desk {
     background: #4a5568 !important;
     color: white;
@@ -193,9 +201,11 @@
 
 
     let pupilMap = {};
+    let genderMap = {};
     if(pupils.pupils) {
         pupils.pupils.forEach(p => {
             pupilMap[p.id] = ((p.first_name || '') + ' ' + (p.last_name || p.name || '')).trim();
+            genderMap[p.id] = p.gender || null;
         });
     }
     
@@ -251,11 +261,14 @@
                     cell.ondrop = (e) => handleDrop(e, s.id);
 
                     if (pId) {
-                        cell.classList.add('assigned');
+                        const gender = genderMap[pId];
+                        const assignedClass = gender === 'f' ? 'assigned-female' : gender === 'm' ? 'assigned-male' : 'assigned';
+                        const iconColor = gender === 'f' ? '#c2185b' : gender === 'm' ? '#1565c0' : '#2e7d32';
+                        cell.classList.add(assignedClass);
                         cell.dataset.pupilId = pId;
                         cell.draggable = true;
                         cell.ondragstart = (e) => handleDragStart(e, pId, s.id);
-                        cell.innerHTML = `<i class="fa-solid fa-user" style="color:#2e7d32; font-size: 1.5em; pointer-events: none;"></i><div class="pupil-name" style="pointer-events: none;">${pupilMap[pId] || t('result.unknown')}</div>`;
+                        cell.innerHTML = `<i class="fa-solid fa-user" style="color:${iconColor}; font-size: 1.5em; pointer-events: none;"></i><div class="pupil-name" style="pointer-events: none;">${pupilMap[pId] || t('result.unknown')}</div>`;
                     } else {
                         cell.innerHTML = `<i class="fa-solid fa-chair" style="color:#9e9e9e; font-size: 1.5em; pointer-events: none;"></i><div class="pupil-name" style="color: #9e9e9e; font-weight: normal; pointer-events: none;">${t('result.free_seat')}</div>`;
                     }

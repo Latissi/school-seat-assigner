@@ -78,6 +78,10 @@
   "pupils.toast_enter_name": "Bitte mindestens einen Vornamen eingeben",
   "pupils.toast_saved": "Schüler erfolgreich gespeichert",
   "pupils.toast_save_error": "Fehler beim Speichern der Schüler",
+  "pupils.col_gender": "Geschlecht",
+  "pupils.gender_unknown": "—",
+  "pupils.gender_male": "♂ Junge",
+  "pupils.gender_female": "♀ Mädchen",
 
   "prefs.heading": "Schülerpräferenzen: {class_name}",
   "prefs.col_pupil_a": "Schüler A",

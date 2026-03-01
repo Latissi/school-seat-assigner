@@ -13,6 +13,7 @@
                     <tr>
                         <th><i class="fa-solid fa-user"></i> {{ t('pupils.col_first_name') }}</th>
                         <th><i class="fa-solid fa-user"></i> {{ t('pupils.col_last_name') }}</th>
+                        <th><i class="fa-solid fa-venus-mars"></i> {{ t('pupils.col_gender') }}</th>
                         <th><i class="fa-solid fa-chart-line"></i> {{ t('pupils.col_performance') }} <i class="fa-solid fa-circle-info" title="{{ t('pupils.performance_tooltip') }}"></i></th>
                         <th><i class="fa-solid fa-wrench"></i> {{ t('common.col_action') }}</th>
                     </tr>
@@ -27,6 +28,11 @@
             <h3><i class="fa-solid fa-user-plus"></i> {{ t('pupils.new_pupil') }}</h3>
             <input type="text" id="new-pupil-first" placeholder="{{ t('pupils.first_name_placeholder') }}">
             <input type="text" id="new-pupil-last" placeholder="{{ t('pupils.last_name_placeholder') }}" style="margin-top: 10px;">
+            <select id="new-pupil-gender" style="margin-top: 10px; width: 100%;">
+                <option value="">{{ t('pupils.gender_unknown') }}</option>
+                <option value="m">{{ t('pupils.gender_male') }}</option>
+                <option value="f">{{ t('pupils.gender_female') }}</option>
+            </select>
             <button onclick="addPupil()" style="margin-top: 10px;"><i class="fa-solid fa-plus"></i> {{ t('common.add') }}</button>
             
         </div>
@@ -49,6 +55,9 @@
         if (p.performance === undefined) {
             p.performance = 3;
         }
+        if (p.gender === undefined) {
+            p.gender = null;
+        }
     });
 
     function updatePerformance(index, value) {
@@ -58,12 +67,23 @@
         document.getElementById(`perf-val-${index}`).innerText = value;
     }
 
+    function updateName(index, field, value) {
+        data.pupils[index][field] = value.trim();
+        data.pupils[index].name = (data.pupils[index].first_name + ' ' + data.pupils[index].last_name).trim();
+        savePupils();
+    }
+
+    function updateGender(index, value) {
+        data.pupils[index].gender = value || null;
+        savePupils();
+    }
+
     function renderPupils() {
         const tbody = document.getElementById('pupil-table');
         tbody.innerHTML = '';
         
         if (data.pupils.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#666;">${t('pupils.no_pupils')}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#666;">${t('pupils.no_pupils')}</td></tr>`;
             return;
         }
 
@@ -71,12 +91,30 @@
             let tr = document.createElement('tr');
             
             let tdFirst = document.createElement('td');
-            tdFirst.innerText = p.first_name;
+            let inputFirst = document.createElement('input');
+            inputFirst.type = 'text';
+            inputFirst.value = p.first_name;
+            inputFirst.style.cssText = 'width: 100%; box-sizing: border-box;';
+            inputFirst.onchange = () => updateName(index, 'first_name', inputFirst.value);
+            tdFirst.appendChild(inputFirst);
             tr.appendChild(tdFirst);
-            
+
             let tdLast = document.createElement('td');
-            tdLast.innerText = p.last_name;
+            let inputLast = document.createElement('input');
+            inputLast.type = 'text';
+            inputLast.value = p.last_name;
+            inputLast.style.cssText = 'width: 100%; box-sizing: border-box;';
+            inputLast.onchange = () => updateName(index, 'last_name', inputLast.value);
+            tdLast.appendChild(inputLast);
             tr.appendChild(tdLast);
+
+            let tdGender = document.createElement('td');
+            let selGender = document.createElement('select');
+            selGender.innerHTML = `<option value="">${t('pupils.gender_unknown')}</option><option value="m">${t('pupils.gender_male')}</option><option value="f">${t('pupils.gender_female')}</option>`;
+            selGender.value = p.gender || '';
+            selGender.onchange = () => updateGender(index, selGender.value);
+            tdGender.appendChild(selGender);
+            tr.appendChild(tdGender);
             
             let tdPerf = document.createElement('td');
             let perfVal = p.performance || 3;
@@ -116,17 +154,21 @@
         if (firstName || lastName) {
             const newName = firstName + " " + lastName;
             const newId = generateId();
+            const genderSelect = document.getElementById('new-pupil-gender');
+            const gender = genderSelect.value || null;
             data.pupils.push({ 
                 id: newId, 
                 first_name: firstName, 
                 last_name: lastName,
                 name: newName.trim(), 
                 performance: 3,
+                gender: gender,
                 sit_next_to: [], 
                 avoid: [] 
             });
             inputFirst.value = '';
             inputLast.value = '';
+            genderSelect.value = '';
             renderPupils();
             savePupils();
         }

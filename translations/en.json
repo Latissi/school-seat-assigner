@@ -78,6 +78,10 @@
   "pupils.toast_enter_name": "Please enter at least a first name",
   "pupils.toast_saved": "Pupils saved successfully",
   "pupils.toast_save_error": "Error saving pupils",
+  "pupils.col_gender": "Gender",
+  "pupils.gender_unknown": "—",
+  "pupils.gender_male": "♂ Boy",
+  "pupils.gender_female": "♀ Girl",
 
   "prefs.heading": "Pupil Preferences: {class_name}",
   "prefs.col_pupil_a": "Pupil A",
