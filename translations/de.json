@@ -22,6 +22,7 @@
   "rule.compat_pairs": "Kompatible Paare",
   "rule.sit_next_to": "Sitzt neben",
   "rule.avoid": "Vermeidet",
+  "rule.performance": "Abstand zum Lehrer",
 
   "index.page_title": "Übersicht – Sitzplatzverwaltung",
   "index.heading": "Deine Klassen",
@@ -131,6 +132,7 @@
   "config.sit_next_to_desc": "Belohnung, wenn zwei Schüler, die nebeneinander sitzen möchten, benachbart sind.",
   "config.avoid": "Vermeidet",
   "config.avoid_desc": "Strafe (negativer Wert), wenn zwei Schüler, die sich vermeiden möchten, benachbart sind.",
+  "config.performance_desc": "Abstandsbelohnung/-strafe basierend auf der Schülerleistung. Niedrigere Leistung zieht Schüler näher zum Lehrer.",
   "config.how_weights": "Wie Gewichtungen funktionieren",
   "config.how_weights_1": "Der Solver maximiert eine Gesamtpunktzahl aus allen Einschränkungen. Jede Gewichtung skaliert den Beitrag dieser Regel. Eine Verdopplung macht den Solver doppelt so bestrebt, diese Einschränkung zu erfüllen.",
   "config.how_weights_2": "Bei 'Getrennt halten' wird die Gewichtung mit dem Manhattan-Abstand zwischen Sitzen multipliziert, daher haben selbst kleine Erhöhungen einen großen Effekt. Beginne mit den Standardwerten, falls du unsicher bist.",
@@ -149,6 +151,7 @@
   "result.unknown": "Unbekannt",
   "result.free_seat": "Freier Platz",
   "result.calculating": "Wird berechnet...",
+  "result.view_performance": "Abstand zum Lehrer anzeigen",
   "result.toast_move": "Zug gespeichert und bewertet",
   "result.toast_move_error": "Zuweisung konnte nicht aktualisiert werden",
   "result.toast_generated": "Zuweisung erfolgreich generiert!",

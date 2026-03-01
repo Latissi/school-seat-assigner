@@ -53,19 +53,18 @@
     flex-direction: column;
     align-items: stretch;
 }
-.layout-editor {
+.tools-bar {
     display: flex;
     gap: 1rem;
-    align-items: flex-start;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.tools-card {
+    flex: 1 1 260px;
+    min-width: 220px;
+}
+.grid-scroll {
     overflow-x: auto;
-}
-.layout-main {
-    flex: 1 1 auto;
-    min-width: 0;
-}
-.layout-tools {
-    flex: 0 0 320px;
 }
 
 /* Custom Checkbox Toggle Switch Styles */
@@ -116,6 +115,7 @@
 .view-toggle input[type="checkbox"]:checked + .toggle-switch.bg-blue { background: blue; }
 .view-toggle input[type="checkbox"]:checked + .toggle-switch.bg-green { background: green; }
 .view-toggle input[type="checkbox"]:checked + .toggle-switch.bg-orange { background: orange; }
+.view-toggle input[type="checkbox"]:checked + .toggle-switch.bg-purple { background: #6a1b9a; }
 
 .view-label-text {
     font-weight: 600;
@@ -131,63 +131,56 @@
 {% block content %}
 <h2><i class="fa-solid fa-ranking-star"></i> {{ t('result.heading', class_name=class_name) }}</h2>
 
-<div class="layout-editor">
-    <div class="layout-main">
-        <div class="classroom-wrapper" style="position: relative;">
-          <div id="result-container"></div>
-          <svg id="constraint-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10;"></svg>
+<div class="grid-scroll">
+    <div class="classroom-wrapper" style="position: relative;">
+      <div id="result-container"></div>
+      <svg id="constraint-overlay" style="position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10; overflow: visible;"></svg>
+    </div>
+</div>
+
+<div class="tools-bar" style="margin-top: 1rem;">
+    <div class="card tools-card" style="padding: 1em;">
+        <h3 style="margin:0 0 0.6em;"><i class="fa-solid fa-gears"></i> {{ t('result.generate') }}</h3>
+        <div style="display: flex; gap: 0.5em; flex-wrap: wrap;">
+            <button class="success" onclick="assign()"><i class="fa-solid fa-wand-magic-sparkles"></i> {{ t('result.generate') }}</button>
+            <button class="pseudo" onclick="exportImage()"><i class="fa-solid fa-camera"></i> {{ t('result.export_png') }}</button>
+        </div>
+        <div style="margin-top: 1em; font-size: 0.9em; color: #555; background: #e8f4fd; padding: 0.5em; border-radius: 4px; border: 1px solid #b6d4fe;">
+            <i class="fa-solid fa-circle-info" style="color: #0a58ca;"></i> {{ t('result.drag_hint') }}
+        </div>
+        <p style="margin: 0.8em 0 0;">{{ t('result.score_label') }} <span id="score" style="font-weight:bold; font-size:1.2em; color: #2e7d32;">{{ assignment.score }}</span></p>
+    </div>
+    <div class="card tools-card" style="padding: 1em;">
+        <h3 style="margin:0 0 0.6em;"><i class="fa-solid fa-eye"></i> {{ t('result.views') }}</h3>
+        <div style="display: flex; flex-direction: row; flex-wrap: wrap; gap: 0.6em;">
+            <label class="view-toggle">
+                <input type="checkbox" id="view-keep-apart" onchange="drawConstraints()">
+                <div class="toggle-switch bg-red"></div>
+                <span class="view-label-text">{{ t('teacher.keep_apart') }}</span>
+            </label>
+            <label class="view-toggle">
+                <input type="checkbox" id="view-compatible-pairs" onchange="drawConstraints()">
+                <div class="toggle-switch bg-blue"></div>
+                <span class="view-label-text">{{ t('teacher.compat_pairs') }}</span>
+            </label>
+            <label class="view-toggle">
+                <input type="checkbox" id="view-sit-next-to" onchange="drawConstraints()">
+                <div class="toggle-switch bg-green"></div>
+                <span class="view-label-text">{{ t('config.sit_next_to') }}</span>
+            </label>
+            <label class="view-toggle">
+                <input type="checkbox" id="view-avoid" onchange="drawConstraints()">
+                <div class="toggle-switch bg-orange"></div>
+                <span class="view-label-text">{{ t('config.avoid') }}</span>
+            </label>
+            <label class="view-toggle">
+                <input type="checkbox" id="view-performance" onchange="drawConstraints()">
+                <div class="toggle-switch bg-purple"></div>
+                <span class="view-label-text">{{ t('result.view_performance') }}</span>
+            </label>
         </div>
     </div>
-    <div class="layout-tools">
-        <div class="card" style="padding: 1em;">
-            <h3 style="display:flex; align-items:center; justify-content:space-between; margin:0 0 0.6em;">
-                <span><i class="fa-solid fa-gears"></i> {{ t('result.generate') }}</span>
-                <button class="pseudo" onclick="togglePanel('panel-generate')" style="padding:0.1em 0.4em; font-size:0.8em; line-height:1;" title="Collapse"><i id="icon-panel-generate" class="fa-solid fa-chevron-up"></i></button>
-            </h3>
-            <div id="panel-generate">
-                <div style="display: flex; gap: 0.5em; flex-wrap: wrap;">
-                    <button class="success" onclick="assign()"><i class="fa-solid fa-wand-magic-sparkles"></i> {{ t('result.generate') }}</button>
-                    <button class="pseudo" onclick="exportImage()"><i class="fa-solid fa-camera"></i> {{ t('result.export_png') }}</button>
-                </div>
-                <div style="margin-top: 1em; font-size: 0.9em; color: #555; background: #e8f4fd; padding: 0.5em; border-radius: 4px; border: 1px solid #b6d4fe;">
-                    <i class="fa-solid fa-circle-info" style="color: #0a58ca;"></i> {{ t('result.drag_hint') }}
-                </div>
-                <hr>
-                <p>{{ t('result.score_label') }} <span id="score" style="font-weight:bold; font-size:1.2em; color: #2e7d32;">{{ assignment.score }}</span></p>
-            </div>
-        </div>
-        <div class="card" style="padding: 1em; margin-top: 1em;">
-            <h3 style="display:flex; align-items:center; justify-content:space-between; margin:0 0 0.6em;">
-                <span><i class="fa-solid fa-eye"></i> {{ t('result.views') }}</span>
-                <button class="pseudo" onclick="togglePanel('panel-views')" style="padding:0.1em 0.4em; font-size:0.8em; line-height:1;" title="Collapse"><i id="icon-panel-views" class="fa-solid fa-chevron-up"></i></button>
-            </h3>
-            <div id="panel-views">
-            <div style="display: flex; flex-direction: column; gap: 0.8em; margin-top: 1em;">
-                <label class="view-toggle">
-                    <input type="checkbox" id="view-keep-apart" onchange="drawConstraints()">
-                    <div class="toggle-switch bg-red"></div>
-                    <span class="view-label-text">{{ t('teacher.keep_apart') }}</span>
-                </label>
-                <label class="view-toggle">
-                    <input type="checkbox" id="view-compatible-pairs" onchange="drawConstraints()">
-                    <div class="toggle-switch bg-blue"></div>
-                    <span class="view-label-text">{{ t('teacher.compat_pairs') }}</span>
-                </label>
-                <label class="view-toggle">
-                    <input type="checkbox" id="view-sit-next-to" onchange="drawConstraints()">
-                    <div class="toggle-switch bg-green"></div>
-                    <span class="view-label-text">{{ t('config.sit_next_to') }}</span>
-                </label>
-                <label class="view-toggle">
-                    <input type="checkbox" id="view-avoid" onchange="drawConstraints()">
-                    <div class="toggle-switch bg-orange"></div>
-                    <span class="view-label-text">{{ t('config.avoid') }}</span>
-                </label>
-            </div>
-            </div><!-- /panel-views -->
-        </div><!-- /card -->
-    </div><!-- /layout-tools -->
-</div><!-- /layout-editor -->
+</div>
 
 <script>
     const className = "{{ class_name }}";
@@ -197,27 +190,7 @@
     let teacher = {{ teacher | tojson | safe }};
     let config = {{ config | tojson | safe }};
 
-    /* ── collapsible panels ─────────────────────────────── */
-    function togglePanel(id) {
-        const panel = document.getElementById(id);
-        const icon  = document.getElementById('icon-' + id);
-        const hidden = panel.style.display === 'none';
-        panel.style.display = hidden ? '' : 'none';
-        icon.className = hidden ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down';
-        try { localStorage.setItem('panel-' + id, hidden ? 'open' : 'closed'); } catch(_) {}
-    }
-    function restorePanels() {
-        ['panel-generate', 'panel-views'].forEach(id => {
-            let state;
-            try { state = localStorage.getItem('panel-' + id); } catch(_) {}
-            if (state === 'closed') {
-                const panel = document.getElementById(id);
-                const icon  = document.getElementById('icon-' + id);
-                if (panel) panel.style.display = 'none';
-                if (icon)  icon.className = 'fa-solid fa-chevron-down';
-            }
-        });
-    }
+
 
     let pupilMap = {};
     if(pupils.pupils) {
@@ -361,6 +334,24 @@
         const container = document.getElementById('result-container');
         const containerRect = container.getBoundingClientRect();
 
+        function getTeacherCenter() {
+            const desk = document.querySelector('.teacher-desk');
+            if (desk) {
+                return {
+                    x: desk.offsetLeft + desk.offsetWidth / 2,
+                    y: desk.offsetTop + desk.offsetHeight / 2
+                };
+            }
+            // Fallback: teacher is conceptually above row 0, centred horizontally.
+            // Use grid geometry (90px cells + 10px gap) rather than DOM offsets.
+            const cellSize = 90, gap = 10;
+            const gridCols = layout.width || 10;
+            return {
+                x: (gridCols * (cellSize + gap)) / 2,
+                y: -(cellSize / 2)
+            };
+        }
+
         function getSeatCenter(pId) {
             let seatId = Object.keys(assignment.mapping).find(key => assignment.mapping[key] === pId);
             if (!seatId) return null;
@@ -381,7 +372,10 @@
             let c1 = getSeatCenter(p1);
             let c2 = getSeatCenter(p2);
             if (!c1 || !c2) return;
-            
+            _drawRawLine(c1, c2, color, weightText);
+        }
+
+        function _drawRawLine(c1, c2, color, weightText) {
             let line = document.createElementNS("http://www.w3.org/2000/svg", "line");
             line.setAttribute("x1", c1.x);
             line.setAttribute("y1", c1.y);
@@ -414,6 +408,7 @@
         const showCompPairs = document.getElementById('view-compatible-pairs') && document.getElementById('view-compatible-pairs').checked;
         const showSitNextTo = document.getElementById('view-sit-next-to') && document.getElementById('view-sit-next-to').checked;
         const showAvoid = document.getElementById('view-avoid') && document.getElementById('view-avoid').checked;
+        const showPerformance = document.getElementById('view-performance') && document.getElementById('view-performance').checked;
 
         if (showKeepApart && teacher.keep_apart) {
             teacher.keep_apart.forEach(pair => drawLine(pair[0], pair[1], 'red', `x${config.weight_keep_apart}`));
@@ -422,8 +417,9 @@
             teacher.compatible_pairs.forEach(pair => drawLine(pair[0], pair[1], 'blue', `${config.weight_compatible_pairs}`));
         }
         
-        if (showSitNextTo || showAvoid) {
+        if (showSitNextTo || showAvoid || showPerformance) {
             if (pupils.pupils) {
+                const teacherCenter = getTeacherCenter();
                 pupils.pupils.forEach(p => {
                     if (showSitNextTo && p.sit_next_to) {
                         p.sit_next_to.forEach(otherId => {
@@ -434,6 +430,18 @@
                         p.avoid.forEach(otherId => {
                             drawLine(p.id, otherId, 'orange', `${config.weight_avoid}`);
                         });
+                    }
+                    if (showPerformance) {
+                        let perf = p.performance !== undefined ? p.performance : 3;
+                        let factor = 3 - perf;
+                        if (factor !== 0) {
+                            let seatCenter = getSeatCenter(p.id);
+                            if (seatCenter && teacherCenter) {
+                                let color = factor > 0 ? '#6a1b9a' : '#8d6e63'; // purple for closer, brown for away
+                                let text = factor > 0 ? `+${factor * config.weight_performance}` : `${factor * config.weight_performance}`;
+                                _drawRawLine(seatCenter, teacherCenter, color, text);
+                            }
+                        }
                     }
                 });
             }
@@ -518,7 +526,6 @@
         }
     }
 
-    restorePanels();
     renderResult();
 </script>
 {% endblock %}

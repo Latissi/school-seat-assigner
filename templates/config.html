@@ -42,6 +42,16 @@
                         </td>
                         <td style="font-size: 0.85em; color: #555;">{{ t('config.compat_pairs_desc') }}</td>
                     </tr>
+                    <tr>
+                        <td><i class="fa-solid fa-person-chalkboard" style="color: #6a1b9a;"></i> {{ t('rule.performance') }}</td>
+                        <td>
+                            <input type="number" id="weight_performance" value="{{ config.weight_performance }}"
+                                   min="0" max="10000" step="5"
+                                   style="width: 110px;"
+                                   onchange="saveConfig()">
+                        </td>
+                        <td style="font-size: 0.85em; color: #555;">{{ t('config.performance_desc') }}</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -111,6 +121,7 @@
             weight_compatible_pairs: parseInt(document.getElementById('weight_compatible_pairs').value, 10),
             weight_sit_next_to:     parseInt(document.getElementById('weight_sit_next_to').value, 10),
             weight_avoid:           parseInt(document.getElementById('weight_avoid').value, 10),
+            weight_performance:     parseInt(document.getElementById('weight_performance').value, 10)
         };
 
         // Guard: avoid NaN values reaching the server

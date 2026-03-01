@@ -22,6 +22,7 @@
   "rule.compat_pairs": "Compatible Pairs",
   "rule.sit_next_to": "Sit Next To",
   "rule.avoid": "Avoid",
+  "rule.performance": "Distance to Teacher",
 
   "index.page_title": "Dashboard – School Seat Assigner",
   "index.heading": "Your Classes",
@@ -131,6 +132,7 @@
   "config.sit_next_to_desc": "Reward when two pupils who want to sit next to each other are adjacent.",
   "config.avoid": "Avoid",
   "config.avoid_desc": "Penalty (negative value) when two pupils who want to avoid each other are adjacent.",
+  "config.performance_desc": "Distance reward/penalty based on pupil performance. Lower performance pulls closer to the teacher.",
   "config.how_weights": "How weights work",
   "config.how_weights_1": "The solver maximises a total score built from all constraints. Each weight scales the contribution of that rule. Doubling a weight makes the solver twice as eager to satisfy that constraint relative to others.",
   "config.how_weights_2": "For Keep Apart, the weight is multiplied by the Manhattan distance between seats, so even small increases have a large effect. Start with the defaults if you are unsure.",
@@ -149,6 +151,7 @@
   "result.unknown": "Unknown",
   "result.free_seat": "Free Seat",
   "result.calculating": "Calculating...",
+  "result.view_performance": "Show Distance to Teacher",
   "result.toast_move": "Move saved & scored",
   "result.toast_move_error": "Failed to update mapping",
   "result.toast_generated": "Assignment generated successfully!",

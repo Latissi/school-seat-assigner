@@ -65,19 +65,21 @@ def evaluate_mapping(class_name: str, mapping: Dict[str, str]) -> Dict[str, Any]
                 if is_adj(p, avd):
                     score += w_avoid
 
-    # Performance
+    # Performance + baseline fill-from-front
+    # Every pupil has a small constant attraction to close seats so that
+    # free seats are pushed to the back when not all seats are occupied.
     max_dist = max(seat_distances.values()) if seat_distances else 1.0
-    perf_scale = 30
+    perf_scale = config_data.get('weight_performance', 30)
+    fill_scale = max(1, perf_scale // 3)
     
     for p in pupil_ids:
         if p in p_to_s:
             s = p_to_s[p]
             perf = pupils_map[p].get('performance', 3)
             perf_factor = 3 - perf
-            if perf_factor != 0:
-                dist = seat_distances[s]
-                closeness = max_dist - dist
-                score += int(perf_factor * closeness * perf_scale)
+            dist = seat_distances[s]
+            closeness = max_dist - dist
+            score += int((perf_factor * perf_scale + fill_scale) * closeness)
                 
     return {"mapping": mapping, "score": score}
 
@@ -259,24 +261,23 @@ def _assign_seats_ortools(layout_data, pupils_data, teacher_data, config_data=No
         for avd in pupils_map[p].get('avoid', []):
             add_adjacency_reward(p, avd, w_avoid, 'dislike')
             
-    # Performance-based Distance Calculation
-    # Centered scale: performance 3 is neutral, 1-2 prefer close, 4-5 prefer far.
+    # Performance-based Distance Calculation + baseline fill-from-front.
+    # A small fill_scale bonus applies to every pupil so that, when seats
+    # outnumber pupils, the solver leaves the furthest seats empty.
     max_dist = max(seat_distances.values()) if seat_distances else 1.0
-    perf_scale = 30
+    perf_scale = config_data.get('weight_performance', 30)
+    fill_scale = max(1, perf_scale // 3)
 
     for p in pupil_ids:
         perf = pupils_map[p].get('performance', 3)
         perf_factor = 3 - perf
-
-        if perf_factor == 0:
-            continue
         
         for s in seats:
             dist = seat_distances[s]
             closeness = max_dist - dist
-            score = int(perf_factor * closeness * perf_scale)
-            if score != 0:
-                objective_terms.append(X[(p, s)] * score)
+            contribution = int((perf_factor * perf_scale + fill_scale) * closeness)
+            if contribution != 0:
+                objective_terms.append(X[(p, s)] * contribution)
                 
     # 4. Solve
     model.Maximize(sum(objective_terms))

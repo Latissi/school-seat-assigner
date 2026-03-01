@@ -58,6 +58,7 @@ CONFIG_DEFAULTS = {
     "weight_compatible_pairs": 200,
     "weight_sit_next_to": 30,
     "weight_avoid": -30,
+    "weight_performance": 30,
 }
 
 def load_config(class_name):
