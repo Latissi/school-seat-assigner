@@ -1,5 +1,16 @@
 import json
 import os
+import threading
+
+# Per-class locks so concurrent autosave requests never interleave file writes.
+_class_locks: dict[str, threading.Lock] = {}
+_registry_lock = threading.Lock()
+
+def _get_lock(class_name: str) -> threading.Lock:
+    with _registry_lock:
+        if class_name not in _class_locks:
+            _class_locks[class_name] = threading.Lock()
+        return _class_locks[class_name]
 
 def get_class_dir(class_name):
     base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
@@ -14,8 +25,12 @@ def _load_json(file_path, default=None):
         return json.load(f)
 
 def _save_json(file_path, data):
-    with open(file_path, 'w', encoding='utf-8') as f:
+    """Write atomically: serialise to a sibling .tmp file, then os.replace() it
+    into place so a crash mid-write never leaves a truncated or empty file."""
+    tmp_path = file_path + '.tmp'
+    with open(tmp_path, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2)
+    os.replace(tmp_path, file_path)
 
 def load_layout(class_name):
     class_dir = get_class_dir(class_name)
@@ -23,7 +38,8 @@ def load_layout(class_name):
 
 def save_layout(class_name, doc):
     class_dir = get_class_dir(class_name)
-    _save_json(os.path.join(class_dir, 'layout.json'), doc)
+    with _get_lock(class_name):
+        _save_json(os.path.join(class_dir, 'layout.json'), doc)
 
 def load_pupils(class_name):
     class_dir = get_class_dir(class_name)
@@ -31,7 +47,8 @@ def load_pupils(class_name):
 
 def save_pupils(class_name, doc):
     class_dir = get_class_dir(class_name)
-    _save_json(os.path.join(class_dir, 'pupils.json'), doc)
+    with _get_lock(class_name):
+        _save_json(os.path.join(class_dir, 'pupils.json'), doc)
 
 def load_teacher_constraints(class_name):
     class_dir = get_class_dir(class_name)
@@ -43,7 +60,8 @@ def save_teacher_constraints(class_name, doc):
         "keep_apart": doc.get("keep_apart", []) if isinstance(doc, dict) else [],
         "compatible_pairs": doc.get("compatible_pairs", []) if isinstance(doc, dict) else []
     }
-    _save_json(os.path.join(class_dir, 'teacher.json'), canonical)
+    with _get_lock(class_name):
+        _save_json(os.path.join(class_dir, 'teacher.json'), canonical)
 
 def load_assignment(class_name):
     class_dir = get_class_dir(class_name)
@@ -51,7 +69,8 @@ def load_assignment(class_name):
 
 def save_assignment(class_name, doc):
     class_dir = get_class_dir(class_name)
-    _save_json(os.path.join(class_dir, 'assignment.json'), doc)
+    with _get_lock(class_name):
+        _save_json(os.path.join(class_dir, 'assignment.json'), doc)
 
 CONFIG_DEFAULTS = {
     "weight_keep_apart": 100,
@@ -72,4 +91,5 @@ def save_config(class_name, doc):
     if not isinstance(doc, dict):
         doc = {}
     canonical = {k: doc.get(k, CONFIG_DEFAULTS[k]) for k in CONFIG_DEFAULTS}
-    _save_json(os.path.join(class_dir, 'config.json'), canonical)
+    with _get_lock(class_name):
+        _save_json(os.path.join(class_dir, 'config.json'), canonical)
